@@ -33,9 +33,9 @@ pipeline {
 
         stage('Deploy on Raspberry Pi') {
             steps {
-                sshagent(['raspberry-pi-ssh']) {
+                withCredentials([sshUserPrivateKey(credentialsId: 'raspberry-pi-ssh', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')]) {
                     sh '''
-                    ssh -o StrictHostKeyChecking=no user@100.108.70.55 "
+                    ssh -i $SSH_KEY -o StrictHostKeyChecking=no $SSH_USER@100.108.70.55 "
                         docker pull $DOCKER_IMAGE
                         docker stop mi_contenedor || true
                         docker rm mi_contenedor || true
