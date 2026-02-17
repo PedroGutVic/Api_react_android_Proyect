@@ -39,7 +39,7 @@ pipeline {
                         docker pull $DOCKER_IMAGE
                         docker stop mi_contenedor || true
                         docker rm mi_contenedor || true
-                        docker run -d --name mi_contenedor -p 80:8080 $DOCKER_IMAGE
+                        docker run -d --name mi_contenedor -p 8081:8080 $DOCKER_IMAGE
                     "
                     '''
                 }
