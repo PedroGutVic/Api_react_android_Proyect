@@ -35,12 +35,13 @@ class DatabaseUserRepository : UserInterface {
             nombre = resultSet.getString("nombre"),
             email = resultSet.getString("email"),
             passwordHash = resultSet.getString("password_hash"),
-            fotoPerfilUrl = foto
+            fotoPerfilUrl = foto,
+            rol = resultSet.getString("rol")
         )
     }
 
     override fun getAllUsers(): List<User> {
-        val sql = "SELECT id, nombre, email, password_hash, foto_perfil_url FROM usuarios"
+        val sql = "SELECT id, nombre, email, password_hash, foto_perfil_url, rol FROM usuarios"
         return try {
             getConnection().use { connection ->
                 connection.prepareStatement(sql).use { statement ->
@@ -60,7 +61,7 @@ class DatabaseUserRepository : UserInterface {
     }
 
     override fun getUserById(id: Int): User? {
-        val sql = "SELECT id, nombre, email, password_hash, foto_perfil_url FROM usuarios WHERE id = ?"
+        val sql = "SELECT id, nombre, email, password_hash, foto_perfil_url, rol FROM usuarios WHERE id = ?"
         return try {
             getConnection().use { connection ->
                 connection.prepareStatement(sql).use { statement ->
@@ -78,8 +79,8 @@ class DatabaseUserRepository : UserInterface {
 
     override fun postUser(user: User): Int? {
         val sql = """
-            INSERT INTO usuarios (nombre, email, password_hash, foto_perfil_url)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO usuarios (nombre, email, password_hash, foto_perfil_url, rol)
+            VALUES (?, ?, ?, ?, ?)
         """.trimIndent()
         return try {
             getConnection().use { connection ->
@@ -88,6 +89,7 @@ class DatabaseUserRepository : UserInterface {
                     statement.setString(2, user.email)
                     statement.setString(3, user.passwordHash)
                     statement.setString(4, user.fotoPerfilUrl)
+                    statement.setString(5, user.rol)
                     val updated = statement.executeUpdate()
                     if (updated <= 0) {
                         return null
@@ -109,11 +111,12 @@ class DatabaseUserRepository : UserInterface {
             nombre = user.nombre ?: existing.nombre,
             email = user.email ?: existing.email,
             passwordHash = user.passwordHash ?: existing.passwordHash,
-            fotoPerfilUrl = user.fotoPerfilUrl ?: existing.fotoPerfilUrl
+            fotoPerfilUrl = user.fotoPerfilUrl ?: existing.fotoPerfilUrl,
+            rol = user.rol ?: existing.rol
         )
         val sql = """
             UPDATE usuarios
-            SET nombre = ?, email = ?, password_hash = ?, foto_perfil_url = ?
+            SET nombre = ?, email = ?, password_hash = ?, foto_perfil_url = ?, rol = ?
             WHERE id = ?
         """.trimIndent()
         return try {
@@ -123,7 +126,8 @@ class DatabaseUserRepository : UserInterface {
                     statement.setString(2, updated.email)
                     statement.setString(3, updated.passwordHash)
                     statement.setString(4, updated.fotoPerfilUrl)
-                    statement.setInt(5, id)
+                    statement.setString(5, updated.rol)
+                    statement.setInt(6, id)
                     statement.executeUpdate() > 0
                 }
             }

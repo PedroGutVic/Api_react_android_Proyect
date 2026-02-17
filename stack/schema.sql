@@ -31,8 +31,8 @@ INSERT INTO videogames (nombre, precio, plataforma, caracteristicas) VALUES
     ('Elden Ring', 59.99, 'PC', 'RPG, mundo abierto, desafiante'),
     ('Hades', 24.99, 'PC', 'Roguelike, accion, narrativa');
 
-INSERT INTO usuarios (nombre, email, password_hash, foto_perfil_url) VALUES
-    ('Ana Perez', 'ana.perez@example.com', 'hash_ana_123', NULL),
-    ('Luis Garcia', 'luis.garcia@example.com', 'hash_luis_456', NULL),
-    ('Marta Lopez', 'marta.lopez@example.com', 'hash_marta_789', 'https://example.com/avatars/marta.png');
+INSERT INTO usuarios (nombre, email, password_hash, foto_perfil_url, rol) VALUES
+    ('Ana Perez', 'ana.perez@example.com', 'hash_ana_123', NULL, 'usuario'),
+    ('Luis Garcia', 'luis.garcia@example.com', 'hash_luis_456', NULL, 'admin'),
+    ('Marta Lopez', 'marta.lopez@example.com', 'hash_marta_789', 'https://example.com/avatars/marta.png', 'usuario');
 
