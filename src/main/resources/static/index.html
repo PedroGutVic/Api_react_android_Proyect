@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PSP ktor DAM 24/25</title>
+    <script type="application/javascript">
+        function fetchAndDisplayEmployees() {
+            console.log("-----------------------------------------");
+            fetchEmployees()
+                .then(employees => {
+                    console.log("Promesa resuelta con los empleados:", employees);
+                    displayEmployees(employees);
+                })
+        }
+
+        function fetchEmployees() {
+            return fetch(
+                "/employee",
+                {
+                    headers: { 'Accept': 'application/json' }
+                }
+            ).then(resp => {
+                console.log("Estado de la respuesta HTTP:", resp.status);
+                console.log("Encabezados de la respuesta:", resp.headers);
+                return resp.json();
+            })
+        }
+
+        function displayEmployees(employees) {
+            console.log("Dentro de display:", employees);
+            const employeesTableBody = document.getElementById("employeesTableBody");
+            employees.forEach(employee => {
+                const newRow = employeeRow(employee);
+                employeesTableBody.appendChild(newRow);
+            })
+        }
+
+        function employeeRow(employee) {
+            return tr([
+                td(employee.name || "N/A"),
+                td(employee.dni || "00000000A"),
+                td(employee.description || "No description"),
+                td(employee.salary || "0")
+
+        ]);
+        }
+
+        function tr(children) {
+            const node = document.createElement("tr");
+            children.forEach(child => node.appendChild(child));
+            return node;
+        }
+
+        function td(text) {
+            const node = document.createElement("td");
+            node.appendChild(document.createTextNode(text));
+            return node;
+        }
+    </script>
+</head>
+<body>
+<h1>Ejemplo de cliente para probar los get PSP 25/26 Virgen del Carmen.</h1>
+<form action="javascript:fetchAndDisplayEmployees()">
+    <input type="submit" value="Ver empleados PSP 25/26">
+</form>
+<table>
+    <thead>
+    <tr><th>Name</th><th>Description</th><th>Salary</th></tr>
+    </thead>
+    <tbody id="employeesTableBody">
+    </tbody>
+</table>
+</body>
+</html>
