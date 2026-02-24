@@ -1,25 +1,160 @@
 package com.ktor
 
-import com.domain.models.UpdateUser
-import com.domain.models.UpdateVideoGame
-import com.domain.models.User
-import com.domain.models.VideoGame
+import com.domain.models.*
 import com.domain.usecase.ProviderUseCase
 import com.domain.usecase.ProviderUseCase.logger
 import com.domain.usecase.ProviderUserUseCase
+import com.domain.usecase.auth.AuthUseCase
 import io.ktor.http.*
 import io.ktor.serialization.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
 import io.ktor.server.http.content.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
 fun Application.configureRouting() {
+    val authUseCase = AuthUseCase()
+    
     routing {
         /*
         ktor evalua los endpoint por orden.
          */
+
+        // =============================================
+        // ENDPOINTS DE AUTENTICACIÓN (Sin JWT)
+        // =============================================
+        route("/auth") {
+            // POST /auth/register - Registro de usuario
+            post("/register") {
+                try {
+                    val registerRequest = call.receive<RegisterRequest>()
+                    
+                    // Validaciones
+                    if (registerRequest.username.isBlank()) {
+                        call.respond(HttpStatusCode.BadRequest, mapOf("error" to "El username no puede estar vacio"))
+                        return@post
+                    }
+                    if (registerRequest.email.isBlank() || !registerRequest.email.contains("@")) {
+                        call.respond(HttpStatusCode.BadRequest, mapOf("error" to "El email no es valido"))
+                        return@post
+                    }
+                    if (registerRequest.password.length < 6) {
+                        call.respond(HttpStatusCode.BadRequest, mapOf("error" to "El password debe tener al menos 6 caracteres"))
+                        return@post
+                    }
+                    
+                    val authResponse = authUseCase.register(registerRequest)
+                    if (authResponse == null) {
+                        call.respond(HttpStatusCode.Conflict, mapOf("error" to "El usuario ya existe o hubo un error"))
+                        return@post
+                    }
+                    
+                    call.respond(HttpStatusCode.Created, authResponse)
+                } catch (e: IllegalStateException) {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Error en el formato de datos"))
+                } catch (e: JsonConvertException) {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Error en la conversion json"))
+                }
+            }
+
+            // POST /auth/login - Login de usuario
+            post("/login") {
+                try {
+                    val loginRequest = call.receive<LoginRequest>()
+                    
+                    if (loginRequest.email.isBlank()) {
+                        call.respond(HttpStatusCode.BadRequest, mapOf("error" to "El email no puede estar vacio"))
+                        return@post
+                    }
+                    if (loginRequest.password.isBlank()) {
+                        call.respond(HttpStatusCode.BadRequest, mapOf("error" to "El password no puede estar vacio"))
+                        return@post
+                    }
+                    
+                    val authResponse = authUseCase.login(loginRequest)
+                    if (authResponse == null) {
+                        call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Credenciales invalidas"))
+                        return@post
+                    }
+                    
+                    call.respond(HttpStatusCode.OK, authResponse)
+                } catch (e: IllegalStateException) {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Error en el formato de datos"))
+                } catch (e: JsonConvertException) {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Error en la conversion json"))
+                }
+            }
+
+            // POST /auth/refresh - Refrescar access token
+            post("/refresh") {
+                try {
+                    val refreshRequest = call.receive<RefreshTokenRequest>()
+                    
+                    if (refreshRequest.refreshToken.isBlank()) {
+                        call.respond(HttpStatusCode.BadRequest, mapOf("error" to "El refresh token no puede estar vacio"))
+                        return@post
+                    }
+                    
+                    val refreshResponse = authUseCase.refreshAccessToken(refreshRequest)
+                    if (refreshResponse == null) {
+                        call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Refresh token invalido"))
+                        return@post
+                    }
+                    
+                    call.respond(HttpStatusCode.OK, refreshResponse)
+                } catch (e: IllegalStateException) {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Error en el formato de datos"))
+                } catch (e: JsonConvertException) {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Error en la conversion json"))
+                }
+            }
+
+            // POST /auth/logout - Logout (requiere autenticación)
+            authenticate("auth-jwt") {
+                post("/logout") {
+                    val userId = call.userId
+                    if (userId == null) {
+                        call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Token invalido"))
+                        return@post
+                    }
+                    
+                    val success = authUseCase.logout(userId)
+                    if (!success) {
+                        call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Error en logout"))
+                        return@post
+                    }
+                    
+                    call.respond(HttpStatusCode.OK, mapOf("message" to "Logout exitoso"))
+                }
+            }
+        }
+
+        // =============================================
+        // ENDPOINT PROTEGIDO - GET /me (Información del usuario actual)
+        // =============================================
+        authenticate("auth-jwt") {
+            get("/me") {
+                val userId = call.userId
+                if (userId == null) {
+                    call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Token invalido"))
+                    return@get
+                }
+                
+                val user = authUseCase.getCurrentUser(userId)
+                if (user == null) {
+                    call.respond(HttpStatusCode.NotFound, mapOf("error" to "Usuario no encontrado"))
+                    return@get
+                }
+                
+                call.respond(HttpStatusCode.OK, user)
+            }
+        }
+
+        // =============================================
+        // ENDPOINTS DE VIDEOJUEGOS
+        // =============================================
 
 
 
@@ -169,16 +304,12 @@ fun Application.configureRouting() {
             post {
                 try {
                     val user = call.receive<User>()
-                    if (user.nombre.isBlank()) {
-                        call.respond(HttpStatusCode.BadRequest, "El nombre no puede estar vacio")
+                    if (user.username.isBlank()) {
+                        call.respond(HttpStatusCode.BadRequest, "El username no puede estar vacio")
                         return@post
                     }
                     if (user.email.isBlank() || !user.email.contains("@")) {
                         call.respond(HttpStatusCode.BadRequest, "El email no es valido")
-                        return@post
-                    }
-                    if (user.passwordHash.isBlank()) {
-                        call.respond(HttpStatusCode.BadRequest, "El password no puede estar vacio")
                         return@post
                     }
                     val newId = ProviderUserUseCase.insertUser(user)
@@ -225,19 +356,15 @@ fun Application.configureRouting() {
                     }
                     val updateUser = call.receive<UpdateUser>()
                     if (updateUser.nombre != null && updateUser.nombre.isBlank()) {
-                        call.respond(HttpStatusCode.BadRequest, "El nombre no puede estar vacio")
+                        call.respond(HttpStatusCode.BadRequest, "El username no puede estar vacio")
                         return@patch
                     }
                     if (updateUser.email != null && (updateUser.email.isBlank() || !updateUser.email.contains("@"))) {
                         call.respond(HttpStatusCode.BadRequest, "El email no es valido")
                         return@patch
                     }
-                    if (updateUser.passwordHash != null && updateUser.passwordHash.isBlank()) {
-                        call.respond(HttpStatusCode.BadRequest, "El password no puede estar vacio")
-                        return@patch
-                    }
-                    if (updateUser.rol != null && updateUser.rol !in listOf("admin", "usuario")) {
-                        call.respond(HttpStatusCode.BadRequest, "El rol debe ser 'admin' o 'usuario'")
+                    if (updateUser.rol != null && updateUser.rol !in listOf("admin", "user", "usuario")) {
+                        call.respond(HttpStatusCode.BadRequest, "El rol debe ser 'admin', 'user' o 'usuario'")
                         return@patch
                     }
                     val res = ProviderUserUseCase.updateUser(updateUser, id)

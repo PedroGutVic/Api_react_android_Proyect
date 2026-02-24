@@ -1,5 +1,6 @@
 package com.data.repository
 
+import com.data.models.UserData
 import com.domain.models.UpdateUser
 import com.domain.models.User
 import com.domain.repository.UserInterface
@@ -9,6 +10,7 @@ import java.sql.DriverManager
 import java.sql.ResultSet
 import java.sql.SQLException
 import java.sql.Statement
+import java.sql.Timestamp
 
 class DatabaseUserRepository : UserInterface {
     private val logger = LoggerFactory.getLogger(DatabaseUserRepository::class.java)
@@ -28,27 +30,55 @@ class DatabaseUserRepository : UserInterface {
         return DriverManager.getConnection(jdbcUrl, user, password)
     }
 
-    private fun mapRow(resultSet: ResultSet): User {
-        val foto = resultSet.getString("foto_perfil_url").takeIf { !resultSet.wasNull() }
+    private fun mapRowToUser(resultSet: ResultSet): User {
+        val avatarUrl = resultSet.getString("avatar_url").takeIf { !resultSet.wasNull() }
+        val lastLoginAt = resultSet.getString("last_login_at").takeIf { !resultSet.wasNull() }
         return User(
             id = resultSet.getInt("id"),
-            nombre = resultSet.getString("nombre"),
+            username = resultSet.getString("username"),
+            email = resultSet.getString("email"),
+            role = resultSet.getString("role"),
+            avatarUrl = avatarUrl,
+            isActive = resultSet.getBoolean("is_active"),
+            createdAt = resultSet.getString("created_at"),
+            updatedAt = resultSet.getString("updated_at"),
+            lastLoginAt = lastLoginAt
+        )
+    }
+
+    private fun mapRowToUserData(resultSet: ResultSet): UserData {
+        val avatarUrl = resultSet.getString("avatar_url").takeIf { !resultSet.wasNull() }
+        val refreshTokenHash = resultSet.getString("refresh_token_hash").takeIf { !resultSet.wasNull() }
+        val lastLoginAt = resultSet.getString("last_login_at").takeIf { !resultSet.wasNull() }
+        return UserData(
+            id = resultSet.getInt("id"),
+            username = resultSet.getString("username"),
             email = resultSet.getString("email"),
             passwordHash = resultSet.getString("password_hash"),
-            fotoPerfilUrl = foto,
-            rol = resultSet.getString("rol")
+            role = resultSet.getString("role"),
+            avatarUrl = avatarUrl,
+            isActive = resultSet.getBoolean("is_active"),
+            refreshTokenHash = refreshTokenHash,
+            createdAt = resultSet.getString("created_at"),
+            updatedAt = resultSet.getString("updated_at"),
+            lastLoginAt = lastLoginAt
         )
     }
 
     override fun getAllUsers(): List<User> {
-        val sql = "SELECT id, nombre, email, password_hash, foto_perfil_url, rol FROM usuarios"
+        val sql = """
+            SELECT id, username, email, role, avatar_url, is_active, 
+                   created_at, updated_at, last_login_at 
+            FROM users 
+            WHERE is_active = TRUE
+        """.trimIndent()
         return try {
             getConnection().use { connection ->
                 connection.prepareStatement(sql).use { statement ->
                     statement.executeQuery().use { resultSet ->
                         val result = mutableListOf<User>()
                         while (resultSet.next()) {
-                            result.add(mapRow(resultSet))
+                            result.add(mapRowToUser(resultSet))
                         }
                         result
                     }
@@ -61,13 +91,18 @@ class DatabaseUserRepository : UserInterface {
     }
 
     override fun getUserById(id: Int): User? {
-        val sql = "SELECT id, nombre, email, password_hash, foto_perfil_url, rol FROM usuarios WHERE id = ?"
+        val sql = """
+            SELECT id, username, email, role, avatar_url, is_active, 
+                   created_at, updated_at, last_login_at 
+            FROM users 
+            WHERE id = ?
+        """.trimIndent()
         return try {
             getConnection().use { connection ->
                 connection.prepareStatement(sql).use { statement ->
                     statement.setInt(1, id)
                     statement.executeQuery().use { resultSet ->
-                        if (resultSet.next()) mapRow(resultSet) else null
+                        if (resultSet.next()) mapRowToUser(resultSet) else null
                     }
                 }
             }
@@ -77,19 +112,62 @@ class DatabaseUserRepository : UserInterface {
         }
     }
 
-    override fun postUser(user: User): Int? {
+    override fun getUserByEmail(email: String): UserData? {
         val sql = """
-            INSERT INTO usuarios (nombre, email, password_hash, foto_perfil_url, rol)
-            VALUES (?, ?, ?, ?, ?)
+            SELECT id, username, email, password_hash, role, avatar_url, 
+                   is_active, refresh_token_hash, created_at, updated_at, last_login_at 
+            FROM users 
+            WHERE email = ?
+        """.trimIndent()
+        return try {
+            getConnection().use { connection ->
+                connection.prepareStatement(sql).use { statement ->
+                    statement.setString(1, email)
+                    statement.executeQuery().use { resultSet ->
+                        if (resultSet.next()) mapRowToUserData(resultSet) else null
+                    }
+                }
+            }
+        } catch (e: SQLException) {
+            logger.error("Error buscando usuario por email", e)
+            null
+        }
+    }
+
+    override fun getUserByUsername(username: String): UserData? {
+        val sql = """
+            SELECT id, username, email, password_hash, role, avatar_url, 
+                   is_active, refresh_token_hash, created_at, updated_at, last_login_at 
+            FROM users 
+            WHERE username = ?
+        """.trimIndent()
+        return try {
+            getConnection().use { connection ->
+                connection.prepareStatement(sql).use { statement ->
+                    statement.setString(1, username)
+                    statement.executeQuery().use { resultSet ->
+                        if (resultSet.next()) mapRowToUserData(resultSet) else null
+                    }
+                }
+            }
+        } catch (e: SQLException) {
+            logger.error("Error buscando usuario por username", e)
+            null
+        }
+    }
+
+    override fun createUser(username: String, email: String, passwordHash: String, role: String): Int? {
+        val sql = """
+            INSERT INTO users (username, email, password_hash, role)
+            VALUES (?, ?, ?, ?)
         """.trimIndent()
         return try {
             getConnection().use { connection ->
                 connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS).use { statement ->
-                    statement.setString(1, user.nombre)
-                    statement.setString(2, user.email)
-                    statement.setString(3, user.passwordHash)
-                    statement.setString(4, user.fotoPerfilUrl)
-                    statement.setString(5, user.rol)
+                    statement.setString(1, username)
+                    statement.setString(2, email)
+                    statement.setString(3, passwordHash)
+                    statement.setString(4, role)
                     val updated = statement.executeUpdate()
                     if (updated <= 0) {
                         return null
@@ -100,34 +178,37 @@ class DatabaseUserRepository : UserInterface {
                 }
             }
         } catch (e: SQLException) {
-            logger.error("Error insertando usuario", e)
+            logger.error("Error creando usuario", e)
             null
         }
+    }
+
+    override fun postUser(user: User): Int? {
+        // Este método mantiene compatibilidad con código existente
+        return createUser(user.username, user.email, "", user.role)
     }
 
     override fun updateUser(user: UpdateUser, id: Int): Boolean {
         val existing = getUserById(id) ?: return false
         val updated = existing.copy(
-            nombre = user.nombre ?: existing.nombre,
+            username = user.nombre ?: existing.username, // Compatibilidad con nombre antiguo
             email = user.email ?: existing.email,
-            passwordHash = user.passwordHash ?: existing.passwordHash,
-            fotoPerfilUrl = user.fotoPerfilUrl ?: existing.fotoPerfilUrl,
-            rol = user.rol ?: existing.rol
+            role = user.rol ?: existing.role,
+            avatarUrl = user.fotoPerfilUrl ?: existing.avatarUrl
         )
         val sql = """
-            UPDATE usuarios
-            SET nombre = ?, email = ?, password_hash = ?, foto_perfil_url = ?, rol = ?
+            UPDATE users
+            SET username = ?, email = ?, role = ?, avatar_url = ?
             WHERE id = ?
         """.trimIndent()
         return try {
             getConnection().use { connection ->
                 connection.prepareStatement(sql).use { statement ->
-                    statement.setString(1, updated.nombre)
+                    statement.setString(1, updated.username)
                     statement.setString(2, updated.email)
-                    statement.setString(3, updated.passwordHash)
-                    statement.setString(4, updated.fotoPerfilUrl)
-                    statement.setString(5, updated.rol)
-                    statement.setInt(6, id)
+                    statement.setString(3, updated.role)
+                    statement.setString(4, updated.avatarUrl)
+                    statement.setInt(5, id)
                     statement.executeUpdate() > 0
                 }
             }
@@ -138,7 +219,8 @@ class DatabaseUserRepository : UserInterface {
     }
 
     override fun deleteUser(id: Int): Boolean {
-        val sql = "DELETE FROM usuarios WHERE id = ?"
+        // Soft delete - marcamos como inactivo en lugar de borrar
+        val sql = "UPDATE users SET is_active = FALSE WHERE id = ?"
         return try {
             getConnection().use { connection ->
                 connection.prepareStatement(sql).use { statement ->
@@ -149,6 +231,59 @@ class DatabaseUserRepository : UserInterface {
         } catch (e: SQLException) {
             logger.error("Error borrando usuario", e)
             false
+        }
+    }
+
+    override fun updateRefreshToken(userId: Int, refreshTokenHash: String?): Boolean {
+        val sql = "UPDATE users SET refresh_token_hash = ? WHERE id = ?"
+        return try {
+            getConnection().use { connection ->
+                connection.prepareStatement(sql).use { statement ->
+                    statement.setString(1, refreshTokenHash)
+                    statement.setInt(2, userId)
+                    statement.executeUpdate() > 0
+                }
+            }
+        } catch (e: SQLException) {
+            logger.error("Error actualizando refresh token", e)
+            false
+        }
+    }
+
+    override fun updateLastLogin(userId: Int): Boolean {
+        val sql = "UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?"
+        return try {
+            getConnection().use { connection ->
+                connection.prepareStatement(sql).use { statement ->
+                    statement.setInt(1, userId)
+                    statement.executeUpdate() > 0
+                }
+            }
+        } catch (e: SQLException) {
+            logger.error("Error actualizando last login", e)
+            false
+        }
+    }
+
+    override fun getUserByRefreshToken(refreshTokenHash: String): UserData? {
+        val sql = """
+            SELECT id, username, email, password_hash, role, avatar_url, 
+                   is_active, refresh_token_hash, created_at, updated_at, last_login_at 
+            FROM users 
+            WHERE refresh_token_hash = ? AND is_active = TRUE
+        """.trimIndent()
+        return try {
+            getConnection().use { connection ->
+                connection.prepareStatement(sql).use { statement ->
+                    statement.setString(1, refreshTokenHash)
+                    statement.executeQuery().use { resultSet ->
+                        if (resultSet.next()) mapRowToUserData(resultSet) else null
+                    }
+                }
+            }
+        } catch (e: SQLException) {
+            logger.error("Error buscando usuario por refresh token", e)
+            null
         }
     }
 }
