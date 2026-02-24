@@ -10,5 +10,7 @@ data class UpdateVideoGame(
     val nombre: String? = null,
     val precio: Double? = null,
     val plataforma: String? = null,
-    val caracteristicas: String? = null
+    val caracteristicas: String? = null,
+    val puntuacion: Float? = null,
+    val visitas: Long? = null
 )

@@ -8,5 +8,7 @@ data class VideoGame(
     val nombre: String,
     val precio: Double,
     val plataforma: String,
-    val caracteristicas: String
+    val caracteristicas: String,
+    val puntuacion: Float = 0f,
+    val visitas: Long = 0L
 )

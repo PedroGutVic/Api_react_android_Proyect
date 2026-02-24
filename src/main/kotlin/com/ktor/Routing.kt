@@ -98,6 +98,14 @@ fun Application.configureRouting() {
                     call.respond(HttpStatusCode.BadRequest, "El precio no puede ser negativo")
                     return@post
                 }
+                if (videoGame.puntuacion < 0 || videoGame.puntuacion > 10) {
+                    call.respond(HttpStatusCode.BadRequest, "La puntuacion debe estar entre 0 y 10")
+                    return@post
+                }
+                if (videoGame.visitas < 0) {
+                    call.respond(HttpStatusCode.BadRequest, "Las visitas no pueden ser negativas")
+                    return@post
+                }
                 val newId = ProviderUseCase.insertVideoGame(videoGame)
                 if (newId == null) {
                     call.respond(HttpStatusCode.Conflict, "El videojuego no pudo insertarse. Puede que ya exista")

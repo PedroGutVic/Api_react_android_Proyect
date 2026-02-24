@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS videogames (
     plataforma VARCHAR(100) NOT NULL,
     caracteristicas TEXT NOT NULL,
     puntuacion FLOAT(25)NOT NULL,
-    visitas BIGINT(255)NOT,
+    visitas BIGINT(255)NOT NULL,
     PRIMARY KEY (id),
     INDEX idx_videogames_plataforma (plataforma),
     INDEX idx_videogames_nombre (nombre)
@@ -24,12 +24,12 @@ CREATE TABLE IF NOT EXISTS usuarios (
     UNIQUE KEY uq_usuarios_email (email)
 ) ;
 
-INSERT INTO videogames (nombre, precio, plataforma, caracteristicas) VALUES
-    ('The Legend of Zelda: Breath of the Wild', 59.99, 'Nintendo Switch', 'Mundo abierto, aventura, exploracion'),
-    ('God of War Ragnarok', 69.99, 'PS5', 'Accion, historia, mitologia nordica'),
-    ('Halo Infinite', 49.99, 'Xbox Series', 'FPS, multijugador, campana'),
-    ('Elden Ring', 59.99, 'PC', 'RPG, mundo abierto, desafiante'),
-    ('Hades', 24.99, 'PC', 'Roguelike, accion, narrativa');
+INSERT INTO videogames (nombre, precio, plataforma, caracteristicas, puntuacion, visitas) VALUES
+    ('The Legend of Zelda: Breath of the Wild', 59.99, 'Nintendo Switch', 'Mundo abierto, aventura, exploracion', 9.2, 2000000),
+    ('God of War Ragnarok', 69.99, 'PS5', 'Accion, historia, mitologia nordica', 8.8, 1800000),
+    ('Halo Infinite', 49.99, 'Xbox Series', 'FPS, multijugador, campana', 8.5, 1500000),
+    ('Elden Ring', 59.99, 'PC', 'RPG, mundo abierto, desafiante', 8.9, 1200000),
+    ('Hades', 24.99, 'PC', 'Roguelike, accion, narrativa', 8.7, 3000000);
 
 INSERT INTO usuarios (nombre, email, password_hash, foto_perfil_url, rol) VALUES
     ('Ana Perez', 'ana.perez@example.com', 'hash_ana_123', NULL, 'usuario'),

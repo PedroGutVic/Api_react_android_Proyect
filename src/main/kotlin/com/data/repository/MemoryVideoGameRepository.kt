@@ -45,7 +45,9 @@ class MemoryVideoGameRepository : VideoGameInterface {
                 nombre = updateVideoGame.nombre ?: originVideoGame.nombre,
                 precio = updateVideoGame.precio ?: originVideoGame.precio,
                 plataforma = updateVideoGame.plataforma ?: originVideoGame.plataforma,
-                caracteristicas = updateVideoGame.caracteristicas ?: originVideoGame.caracteristicas
+                caracteristicas = updateVideoGame.caracteristicas ?: originVideoGame.caracteristicas,
+                puntuacion = updateVideoGame.puntuacion ?: originVideoGame.puntuacion,
+                visitas = updateVideoGame.visitas ?: originVideoGame.visitas
             )
             true
         } else {
