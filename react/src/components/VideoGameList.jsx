@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { videoGameApi } from '../api/client';
+import StarRating from './stars';
 import {
     Trash2, Plus, Gamepad2, Info, Tag,
     DollarSign, Loader2, Search, X,
-    Sparkles, Layers, RefreshCw
+    Sparkles, Layers, RefreshCw, Star, Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -12,7 +13,7 @@ const VideoGameList = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [search, setSearch] = useState('');
-    const [newGame, setNewGame] = useState({ nombre: '', precio: '', plataforma: '', caracteristicas: '' });
+    const [newGame, setNewGame] = useState({ nombre: '', precio: '', plataforma: '', caracteristicas: '', puntuacion: 0 });
     const [isAdding, setIsAdding] = useState(false);
 
     useEffect(() => {
@@ -48,10 +49,11 @@ const VideoGameList = () => {
             const gameToSubmit = {
                 ...newGame,
                 precio: parseFloat(newGame.precio),
+                puntuacion: parseInt(newGame.puntuacion) || 0,
                 id: 0
             };
             await videoGameApi.create(gameToSubmit);
-            setNewGame({ nombre: '', precio: '', plataforma: '', caracteristicas: '' });
+            setNewGame({ nombre: '', precio: '', plataforma: '', caracteristicas: '', puntuacion: 0 });
             setIsAdding(false);
             fetchGames();
         } catch (err) {
@@ -143,11 +145,36 @@ const VideoGameList = () => {
                                     <input value={newGame.caracteristicas} onChange={e => setNewGame({ ...newGame, caracteristicas: e.target.value })} placeholder="Descriptors" />
                                 </div>
                             </div>
-                            <div className="mt-8 flex justify-end">
-                                <button type="submit" className="btn btn-primary px-10">
-                                    <Layers size={20} />
-                                    Authorize Entry
-                                </button>
+                            <div className="mt-8 space-y-6">
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.2 }}
+                                    className="border-t border-primary/20 pt-8 p-6 rounded-xl bg-gradient-to-br from-primary/10 to-accent/5 border border-primary/30"
+                                >
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <Star size={24} className="text-accent" />
+                                        <label className="input-label block m-0 font-bold text-lg">Rate this Game</label>
+                                    </div>
+                                    <StarRating 
+                                        initialRating={newGame.puntuacion} 
+                                        onRate={(rating) => setNewGame({ ...newGame, puntuacion: rating })}
+                                    />
+                                </motion.div>
+                                <div className="flex justify-end gap-3 pt-4">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setIsAdding(false)}
+                                        className="btn btn-ghost"
+                                    >
+                                        <X size={20} />
+                                        Cancel
+                                    </button>
+                                    <button type="submit" className="btn btn-primary px-10">
+                                        <Layers size={20} />
+                                        Authorize Entry
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </motion.div>
@@ -195,6 +222,36 @@ const VideoGameList = () => {
                                         <div className="text-text-muted text-xs uppercase font-bold tracking-widest">Pricing</div>
                                         <div className="text-2xl font-black font-heading text-accent">
                                             {game.precio}<span className="text-sm ml-1">€</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <motion.div 
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            transition={{ delay: 0.1 }}
+                                            className="p-5 rounded-xl bg-gradient-to-br from-accent/15 to-primary/5 border border-accent/30 backdrop-blur-sm"
+                                        >
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <Star size={18} className="text-accent" />
+                                                <span className="text-xs text-text-muted uppercase font-bold tracking-wider">Community Rating</span>
+                                            </div>
+                                            <StarRating 
+                                                initialRating={game.puntuacion ?? 0}
+                                                onRate={(rating) => {
+                                                    const updatedGames = games.map(g => 
+                                                        g.id === game.id ? { ...g, puntuacion: rating } : g
+                                                    );
+                                                    setGames(updatedGames);
+                                                }}
+                                            />
+                                        </motion.div>
+                                        <div className="flex items-center gap-2 p-3 rounded-lg bg-white/5 border border-glass-border">
+                                            <Eye size={16} className="text-blue-400" />
+                                            <div className="text-sm">
+                                                <div className="text-xs text-text-muted uppercase font-semibold">Visits</div>
+                                                <div className="text-lg font-bold">{game.visitas ?? 0}</div>
+                                            </div>
                                         </div>
                                     </div>
 

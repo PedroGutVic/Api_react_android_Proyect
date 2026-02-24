@@ -9,7 +9,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build --no-cache -t $DOCKER_IMAGE .'
+                sh 'docker build -t $DOCKER_IMAGE .'
             }
         }
 
@@ -31,12 +31,22 @@ pipeline {
             }
         }
 
-        stage('Deploy on Raspberry Pi') {
+        stage('Export and Deploy on Raspberry Pi') {
             steps {
+                script {
+                    sh '''
+                    # Export image to tar
+                    docker save $DOCKER_IMAGE | gzip > basic-api-ktor.tar.gz
+                    '''
+                }
                 withCredentials([sshUserPrivateKey(credentialsId: 'raspberry-pi-ssh', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')]) {
                     sh '''
+                    # Copy to Raspberry
+                    scp -i $SSH_KEY -o StrictHostKeyChecking=no basic-api-ktor.tar.gz $SSH_USER@100.108.70.55:~/
+                    
+                    # Load and run on Raspberry
                     ssh -i $SSH_KEY -o StrictHostKeyChecking=no $SSH_USER@100.108.70.55 "
-                        docker pull $DOCKER_IMAGE
+                        docker load < ~/basic-api-ktor.tar.gz
                         docker stop mi_contenedor || true
                         docker rm mi_contenedor || true
                         docker run -d --name mi_contenedor -p 8084:8080 $DOCKER_IMAGE
