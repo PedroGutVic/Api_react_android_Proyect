@@ -191,10 +191,10 @@ class DatabaseUserRepository : UserInterface {
     override fun updateUser(user: UpdateUser, id: Int): Boolean {
         val existing = getUserById(id) ?: return false
         val updated = existing.copy(
-            username = user.nombre ?: existing.username, // Compatibilidad con nombre antiguo
+            username = user.username ?: existing.username,
             email = user.email ?: existing.email,
-            role = user.rol ?: existing.role,
-            avatarUrl = user.fotoPerfilUrl ?: existing.avatarUrl
+            role = user.role ?: existing.role,
+            avatarUrl = user.avatar_url ?: existing.avatarUrl
         )
         val sql = """
             UPDATE users

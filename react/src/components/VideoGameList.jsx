@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { videoGameApi } from '../api/client';
+import { authService } from '../api/auth';
 import StarRating from './stars';
 import {
     Gamepad2,
@@ -31,9 +32,12 @@ const VideoGameList = () => {
     const [formMode, setFormMode] = useState('add');
     const [activeId, setActiveId] = useState(null);
     const [formState, setFormState] = useState(emptyGame);
+    const [userRole, setUserRole] = useState(null);
 
     useEffect(() => {
         fetchGames();
+        const user = authService.getUser();
+        setUserRole(user?.role || null);
     }, []);
 
     const fetchGames = async () => {
@@ -55,6 +59,7 @@ const VideoGameList = () => {
     };
 
     const openAdd = () => {
+        if (userRole !== 'admin') return;
         setFormMode('add');
         setActiveId(null);
         setFormState(emptyGame);
@@ -62,6 +67,7 @@ const VideoGameList = () => {
     };
 
     const openEdit = (game) => {
+        if (userRole !== 'admin') return;
         setFormMode('edit');
         setActiveId(game.id);
         setFormState({
@@ -82,6 +88,7 @@ const VideoGameList = () => {
     };
 
     const handleDelete = async (id) => {
+        if (userRole !== 'admin') return;
         try {
             await videoGameApi.delete(id);
             setGames((prev) => prev.filter((game) => game.id !== id));
@@ -136,9 +143,11 @@ const VideoGameList = () => {
                         <button className="button button-outline" onClick={fetchGames}>
                             <RefreshCw size={18} /> Actualizar
                         </button>
-                        <button className="button button-primary" onClick={openAdd}>
-                            <Plus size={18} /> Nuevo videojuego
-                        </button>
+                        {userRole === 'admin' && (
+                            <button className="button button-primary" onClick={openAdd}>
+                                <Plus size={18} /> Nuevo videojuego
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -273,12 +282,16 @@ const VideoGameList = () => {
                                         </div>
                                     </div>
                                     <div className="card-actions">
-                                        <button className="button button-outline" onClick={() => openEdit(game)}>
-                                            <Pencil size={16} /> Editar
-                                        </button>
-                                        <button className="button button-ghost" onClick={() => handleDelete(game.id)}>
-                                            <Trash2 size={16} /> Eliminar
-                                        </button>
+                                        {userRole === 'admin' && (
+                                            <>
+                                                <button className="button button-outline" onClick={() => openEdit(game)}>
+                                                    <Pencil size={16} /> Editar
+                                                </button>
+                                                <button className="button button-ghost" onClick={() => handleDelete(game.id)}>
+                                                    <Trash2 size={16} /> Eliminar
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 </motion.article>
                             ))}

@@ -15,10 +15,10 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 const emptyUser = {
-    nombre: '',
+    username: '',
     email: '',
-    fotoPerfilUrl: '',
-    rol: 'usuario',
+    avatar_url: '',
+    role: 'user',
 };
 
 const UserManagement = () => {
@@ -59,7 +59,7 @@ const UserManagement = () => {
             const payload = {
                 ...newUser,
                 id: 0,
-                fotoPerfilUrl: newUser.fotoPerfilUrl?.trim() || null,
+                avatar_url: newUser.avatar_url?.trim() || null,
             };
             await userApi.create(payload);
             setNewUser(emptyUser);
@@ -73,10 +73,10 @@ const UserManagement = () => {
     const startEditing = (user) => {
         setEditingUserId(user.id);
         setEditUser({
-            nombre: user.nombre || '',
+            username: user.username || '',
             email: user.email || '',
-            fotoPerfilUrl: user.fotoPerfilUrl || '',
-            rol: user.rol || 'usuario',
+            avatar_url: user.avatar_url || '',
+            role: user.role || 'user',
         });
     };
 
@@ -92,17 +92,17 @@ const UserManagement = () => {
         }
 
         const payload = {};
-        if (editUser.nombre.trim()) {
-            payload.nombre = editUser.nombre.trim();
+        if (editUser.username.trim()) {
+            payload.username = editUser.username.trim();
         }
         if (editUser.email.trim()) {
             payload.email = editUser.email.trim();
         }
-        if (editUser.fotoPerfilUrl.trim()) {
-            payload.fotoPerfilUrl = editUser.fotoPerfilUrl.trim();
+        if (editUser.avatar_url.trim()) {
+            payload.avatar_url = editUser.avatar_url.trim();
         }
-        if (editUser.rol && editUser.rol !== users.find(u => u.id === editingUserId)?.rol) {
-            payload.rol = editUser.rol;
+        if (editUser.role && editUser.role !== users.find(u => u.id === editingUserId)?.role) {
+            payload.role = editUser.role;
         }
 
         if (Object.keys(payload).length === 0) {
@@ -132,7 +132,7 @@ const UserManagement = () => {
         if (!Array.isArray(users)) return [];
         const term = search.toLowerCase();
         return users.filter((user) =>
-            (user?.nombre || '').toLowerCase().includes(term) || 
+            (user?.username || '').toLowerCase().includes(term) || 
             (user?.email || '').toLowerCase().includes(term)
         );
     }, [users, search]);
@@ -163,7 +163,7 @@ const UserManagement = () => {
                         <Search size={18} />
                         <input
                             type="search"
-                            placeholder="Buscar por nombre o email"
+                            placeholder="Buscar por username o email"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                         />
@@ -186,12 +186,12 @@ const UserManagement = () => {
                             </div>
                             <form onSubmit={handleAdd} className="form-grid">
                                 <label className="form-field">
-                                    <span>Nombre</span>
+                                    <span>Username</span>
                                     <input
                                         required
-                                        value={newUser.nombre}
-                                        onChange={(e) => setNewUser({ ...newUser, nombre: e.target.value })}
-                                        placeholder="Nombre completo"
+                                        value={newUser.username}
+                                        onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                                        placeholder="Nombre de usuario"
                                     />
                                 </label>
                                 <label className="form-field">
@@ -207,18 +207,18 @@ const UserManagement = () => {
                                 <label className="form-field">
                                     <span>Rol</span>
                                     <select
-                                        value={newUser.rol}
-                                        onChange={(e) => setNewUser({ ...newUser, rol: e.target.value })}
+                                        value={newUser.role}
+                                        onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
                                     >
-                                        <option value="usuario">Usuario</option>
+                                        <option value="user">Usuario</option>
                                         <option value="admin">Admin</option>
                                     </select>
                                 </label>
                                 <label className="form-field form-field-wide">
-                                    <span>Foto de perfil (URL)</span>
+                                    <span>Avatar URL</span>
                                     <input
-                                        value={newUser.fotoPerfilUrl}
-                                        onChange={(e) => setNewUser({ ...newUser, fotoPerfilUrl: e.target.value })}
+                                        value={newUser.avatar_url}
+                                        onChange={(e) => setNewUser({ ...newUser, avatar_url: e.target.value })}
                                         placeholder="https://..."
                                     />
                                 </label>
@@ -248,10 +248,10 @@ const UserManagement = () => {
                             </div>
                             <form onSubmit={handleUpdate} className="form-grid">
                                 <label className="form-field">
-                                    <span>Nombre</span>
+                                    <span>Username</span>
                                     <input
-                                        value={editUser.nombre}
-                                        onChange={(e) => setEditUser({ ...editUser, nombre: e.target.value })}
+                                        value={editUser.username}
+                                        onChange={(e) => setEditUser({ ...editUser, username: e.target.value })}
                                     />
                                 </label>
                                 <label className="form-field">
@@ -265,18 +265,18 @@ const UserManagement = () => {
                                 <label className="form-field">
                                     <span>Rol</span>
                                     <select
-                                        value={editUser.rol}
-                                        onChange={(e) => setEditUser({ ...editUser, rol: e.target.value })}
+                                        value={editUser.role}
+                                        onChange={(e) => setEditUser({ ...editUser, role: e.target.value })}
                                     >
-                                        <option value="usuario">Usuario</option>
+                                        <option value="user">Usuario</option>
                                         <option value="admin">Admin</option>
                                     </select>
                                 </label>
                                 <label className="form-field form-field-wide">
-                                    <span>Foto de perfil (URL)</span>
+                                    <span>Avatar URL</span>
                                     <input
-                                        value={editUser.fotoPerfilUrl}
-                                        onChange={(e) => setEditUser({ ...editUser, fotoPerfilUrl: e.target.value })}
+                                        value={editUser.avatar_url}
+                                        onChange={(e) => setEditUser({ ...editUser, avatar_url: e.target.value })}
                                     />
                                 </label>
                                 <div className="form-actions">
@@ -308,20 +308,20 @@ const UserManagement = () => {
                                 >
                                     <div className="card-header">
                                         <div className="avatar">
-                                            {user?.fotoPerfilUrl ? (
-                                                <img src={user.fotoPerfilUrl} alt={user?.nombre || 'Usuario'} />
+                                            {user?.avatar_url ? (
+                                                <img src={user.avatar_url} alt={user?.username || 'Usuario'} />
                                             ) : (
                                                 <Users size={20} />
                                             )}
                                         </div>
                                         <span className="tag">ID {user?.id || 'N/A'}</span>
                                     </div>
-                                    <h3>{user?.nombre || 'Sin nombre'}</h3>
+                                    <h3>{user?.username || 'Sin username'}</h3>
                                     <p className="card-meta">
                                         <Mail size={16} /> {user?.email || 'Sin email'}
                                     </p>
                                     <div className="role-row">
-                                        {user?.rol === 'admin' ? (
+                                        {user?.role === 'admin' ? (
                                             <span className="role-badge role-admin">
                                                 <Shield size={14} /> Admin
                                             </span>
