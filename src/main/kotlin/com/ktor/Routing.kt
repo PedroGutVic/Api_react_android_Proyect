@@ -164,135 +164,163 @@ fun Application.configureRouting() {
         2.- Que le pasemos el id por query. Devuelve ese videojuego. Lo tengo de ejemplo, ya que no deberia utilizar una query para un recurso especifico.
         3.- Que le pasemos la plataforma por query. Devuelve todos los videojuegos que tienen dicha plataforma.
          */
-        get("/videogame") {
+        authenticate("auth-jwt") {
+            get("/videogame") {
 
-            val videoGameId = call.request.queryParameters["id"]
-            logger.warn("El id tiene de valor $videoGameId")
-            if (videoGameId != null) {
-                val id = videoGameId.toIntOrNull()
-                if (id == null) {
-                    call.respond(HttpStatusCode.BadRequest, "El id debe ser un numero entero")
+                val videoGameId = call.request.queryParameters["id"]
+                logger.warn("El id tiene de valor $videoGameId")
+                if (videoGameId != null) {
+                    val id = videoGameId.toIntOrNull()
+                    if (id == null) {
+                        call.respond(HttpStatusCode.BadRequest, "El id debe ser un numero entero")
+                        return@get
+                    }
+                    val videoGame = ProviderUseCase.getVideoGameById(id)
+                    if (videoGame == null) {
+                        call.respond(HttpStatusCode.NotFound, "Videojuego no encontrado")
+                    } else {
+                        call.respond(videoGame)
+                    }
                     return@get
                 }
-                val videoGame = ProviderUseCase.getVideoGameById(id)
-                if (videoGame == null) {
-                    call.respond(HttpStatusCode.NotFound, "Videojuego no encontrado")
-                } else {
-                    call.respond(videoGame)
-                }
-                return@get
-            }
 
-            //comprobamos si hemos pasado el parametro plataforma
-            val plataforma = call.request.queryParameters["plataforma"]
-            logger.warn("La plataforma pasada es $plataforma")
-            if (plataforma != null) {
-                val videoGames = ProviderUseCase.getVideoGamesByPlataforma(plataforma)
-                call.respond(videoGames)
-            } else { //No hemos pasado ninguna query
-                val videoGames = ProviderUseCase.getAllVideoGames()  //Ya tengo todos los videojuegos.
-                call.respond(videoGames)
+                //comprobamos si hemos pasado el parametro plataforma
+                val plataforma = call.request.queryParameters["plataforma"]
+                logger.warn("La plataforma pasada es $plataforma")
+                if (plataforma != null) {
+                    val videoGames = ProviderUseCase.getVideoGamesByPlataforma(plataforma)
+                    call.respond(videoGames)
+                } else { //No hemos pasado ninguna query
+                    val videoGames = ProviderUseCase.getAllVideoGames()  //Ya tengo todos los videojuegos.
+                    call.respond(videoGames)
+                }
             }
         }
 
         /*
         Endpoint que no es recomendable, porque no se debe utilizar parametros de url para filtrar. Para eso estan los de consulta.
          */
-        get("/videogame/{videoGameId}") {
+        authenticate("auth-jwt") {
+            get("/videogame/{videoGameId}") {
 
-            //Comprobamos si se ha pasado el id por parametro
-            val videoGameId = call.parameters["videoGameId"]
-            if (videoGameId == null) {
-                call.respond(HttpStatusCode.BadRequest, "Debes pasar el id a buscar")
-                return@get
-            }
+                //Comprobamos si se ha pasado el id por parametro
+                val videoGameId = call.parameters["videoGameId"]
+                if (videoGameId == null) {
+                    call.respond(HttpStatusCode.BadRequest, "Debes pasar el id a buscar")
+                    return@get
+                }
 
-            val id = videoGameId.toIntOrNull()
-            if (id == null) {
-                call.respond(HttpStatusCode.BadRequest, "El id debe ser un numero entero")
-                return@get
-            }
+                val id = videoGameId.toIntOrNull()
+                if (id == null) {
+                    call.respond(HttpStatusCode.BadRequest, "El id debe ser un numero entero")
+                    return@get
+                }
 
-            val videoGame = ProviderUseCase.getVideoGameById(id)
-            if (videoGame == null) {
-                call.respond(HttpStatusCode.NotFound, "Videojuego no encontrado")
-                return@get
+                val videoGame = ProviderUseCase.getVideoGameById(id)
+                if (videoGame == null) {
+                    call.respond(HttpStatusCode.NotFound, "Videojuego no encontrado")
+                    return@get
+                }
+                call.respond(videoGame)
             }
-            call.respond(videoGame)
         }
 
 
-        post("/videogame") {
-            try {
-                val videoGame = call.receive<VideoGame>()
-                if (videoGame.nombre.isBlank()) {
-                    call.respond(HttpStatusCode.BadRequest, "El nombre no puede estar vacio")
+        authenticate("auth-jwt") {
+            post("/videogame") {
+                val userRole = call.userRole
+                if (userRole != "admin") {
+                    call.respond(HttpStatusCode.Forbidden, mapOf("error" to "No tienes permisos para crear videojuegos"))
                     return@post
                 }
-                if (videoGame.precio < 0) {
-                    call.respond(HttpStatusCode.BadRequest, "El precio no puede ser negativo")
-                    return@post
-                }
-                if (videoGame.puntuacion < 0 || videoGame.puntuacion > 10) {
-                    call.respond(HttpStatusCode.BadRequest, "La puntuacion debe estar entre 0 y 10")
-                    return@post
-                }
-                if (videoGame.visitas < 0) {
-                    call.respond(HttpStatusCode.BadRequest, "Las visitas no pueden ser negativas")
-                    return@post
-                }
-                val newId = ProviderUseCase.insertVideoGame(videoGame)
-                if (newId == null) {
-                    call.respond(HttpStatusCode.Conflict, "El videojuego no pudo insertarse. Puede que ya exista")
-                    return@post
-                }
-                call.respond(HttpStatusCode.Created, "Se ha insertado correctamente con id =  $newId")
-            } catch (e: IllegalStateException) {
-                call.respond(HttpStatusCode.BadRequest, "Error en el formato de envio de datos o lectura del cuerpo.")
-            } catch (e: JsonConvertException) {
-                call.respond(HttpStatusCode.BadRequest, "Problemas en la conversion json")
-            }
 
+                try {
+                    val videoGame = call.receive<VideoGame>()
+                    if (videoGame.nombre.isBlank()) {
+                        call.respond(HttpStatusCode.BadRequest, "El nombre no puede estar vacio")
+                        return@post
+                    }
+                    if (videoGame.precio < 0) {
+                        call.respond(HttpStatusCode.BadRequest, "El precio no puede ser negativo")
+                        return@post
+                    }
+                    if (videoGame.puntuacion < 0 || videoGame.puntuacion > 10) {
+                        call.respond(HttpStatusCode.BadRequest, "La puntuacion debe estar entre 0 y 10")
+                        return@post
+                    }
+                    if (videoGame.visitas < 0) {
+                        call.respond(HttpStatusCode.BadRequest, "Las visitas no pueden ser negativas")
+                        return@post
+                    }
+                    val newId = ProviderUseCase.insertVideoGame(videoGame)
+                    if (newId == null) {
+                        call.respond(HttpStatusCode.Conflict, "El videojuego no pudo insertarse. Puede que ya exista")
+                        return@post
+                    }
+                    call.respond(HttpStatusCode.Created, "Se ha insertado correctamente con id =  $newId")
+                } catch (e: IllegalStateException) {
+                    call.respond(HttpStatusCode.BadRequest, "Error en el formato de envio de datos o lectura del cuerpo.")
+                } catch (e: JsonConvertException) {
+                    call.respond(HttpStatusCode.BadRequest, "Problemas en la conversion json")
+                }
+
+            }
         }
 
-        patch("/videogame/{videoGameId}") {
-            try {
+        authenticate("auth-jwt") {
+            patch("/videogame/{videoGameId}") {
+                val userRole = call.userRole
+                if (userRole != "admin") {
+                    call.respond(HttpStatusCode.Forbidden, mapOf("error" to "No tienes permisos para editar videojuegos"))
+                    return@patch
+                }
+
+                try {
+                    val videoGameId = call.parameters["videoGameId"]
+                    val id = videoGameId?.toIntOrNull()
+                    if (id == null) {
+                        call.respond(HttpStatusCode.BadRequest, "Debes identificar el videojuego con un id valido")
+                        return@patch
+                    }
+                    val updateVideoGame = call.receive<UpdateVideoGame>()
+                    val res = ProviderUseCase.updateVideoGame(updateVideoGame, id)
+                    if (!res) {
+                        call.respond(HttpStatusCode.Conflict, "El videojuego no pudo modificarse. Puede que no exista")
+                        return@patch
+                    }
+                    call.respond(HttpStatusCode.Created, "Se ha actualizado correctamente con id =  $id")
+                } catch (e: IllegalStateException) {
+                    call.respond(HttpStatusCode.BadRequest, "Error en el formato de envio de los datos o lectura del cuerpo.")
+                } catch (e: JsonConvertException) {
+                    call.respond(HttpStatusCode.BadRequest, "Error en el formato de json")
+                }
+            }
+        }
+
+
+        authenticate("auth-jwt") {
+            delete("/videogame/{videoGameId}") {
+                val userRole = call.userRole
+                if (userRole != "admin") {
+                    call.respond(HttpStatusCode.Forbidden, mapOf("error" to "No tienes permisos para eliminar videojuegos"))
+                    return@delete
+                }
+
                 val videoGameId = call.parameters["videoGameId"]
                 val id = videoGameId?.toIntOrNull()
+                logger.warn("Queremos borrar el videojuego con id $videoGameId")
                 if (id == null) {
-                    call.respond(HttpStatusCode.BadRequest, "Debes identificar el videojuego con un id valido")
-                    return@patch
+                    call.respond(HttpStatusCode.BadRequest, "Debes identificar el videojuego")
+                    return@delete
                 }
-                val updateVideoGame = call.receive<UpdateVideoGame>()
-                val res = ProviderUseCase.updateVideoGame(updateVideoGame, id)
+                val res = ProviderUseCase.deleteVideoGame(id)
                 if (!res) {
-                    call.respond(HttpStatusCode.Conflict, "El videojuego no pudo modificarse. Puede que no exista")
-                    return@patch
+                    call.respond(HttpStatusCode.NotFound, "Videojuego no encontrado para borrar")
+                } else {
+                    call.respond(HttpStatusCode.NoContent)
                 }
-                call.respond(HttpStatusCode.Created, "Se ha actualizado correctamente con id =  $id")
-            } catch (e: IllegalStateException) {
-                call.respond(HttpStatusCode.BadRequest, "Error en el formato de envio de los datos o lectura del cuerpo.")
-            } catch (e: JsonConvertException) {
-                call.respond(HttpStatusCode.BadRequest, "Error en el formato de json")
-            }
-        }
-
-
-        delete("/videogame/{videoGameId}") {
-            val videoGameId = call.parameters["videoGameId"]
-            val id = videoGameId?.toIntOrNull()
-            logger.warn("Queremos borrar el videojuego con id $videoGameId")
-            if (id == null) {
-                call.respond(HttpStatusCode.BadRequest, "Debes identificar el videojuego")
                 return@delete
             }
-            val res = ProviderUseCase.deleteVideoGame(id)
-            if (!res) {
-                call.respond(HttpStatusCode.NotFound, "Videojuego no encontrado para borrar")
-            } else {
-                call.respond(HttpStatusCode.NoContent)
-            }
-            return@delete
         }
 
 
@@ -355,7 +383,7 @@ fun Application.configureRouting() {
                         return@patch
                     }
                     val updateUser = call.receive<UpdateUser>()
-                    if (updateUser.nombre != null && updateUser.nombre.isBlank()) {
+                    if (updateUser.username != null && updateUser.username.isBlank()) {
                         call.respond(HttpStatusCode.BadRequest, "El username no puede estar vacio")
                         return@patch
                     }
@@ -363,7 +391,7 @@ fun Application.configureRouting() {
                         call.respond(HttpStatusCode.BadRequest, "El email no es valido")
                         return@patch
                     }
-                    if (updateUser.rol != null && updateUser.rol !in listOf("admin", "user", "usuario")) {
+                    if (updateUser.role != null && updateUser.role !in listOf("admin", "user", "usuario")) {
                         call.respond(HttpStatusCode.BadRequest, "El rol debe ser 'admin', 'user' o 'usuario'")
                         return@patch
                     }
