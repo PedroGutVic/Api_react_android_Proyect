@@ -5,6 +5,7 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.exceptions.JWTVerificationException
 import java.util.*
+import java.security.MessageDigest
 
 object AuthUtils {
     // Estas constantes deberían venir de configuración en producción
@@ -69,8 +70,10 @@ object AuthUtils {
         }
     }
     
-    // Hash del refresh token para guardarlo en DB
+    // Hash del refresh token para guardarlo en DB (usar SHA-256 en lugar de bcrypt)
+    // Los JWT tokens son demasiado largos para bcrypt (límite 72 bytes)
     fun hashRefreshToken(refreshToken: String): String {
-        return BCrypt.withDefaults().hashToString(10, refreshToken.toCharArray())
+        val bytes = MessageDigest.getInstance("SHA-256").digest(refreshToken.toByteArray())
+        return bytes.joinToString("") { "%02x".format(it) }
     }
 }

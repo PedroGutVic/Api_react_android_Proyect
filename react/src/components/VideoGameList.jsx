@@ -1,20 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { videoGameApi } from '../api/client';
 import StarRating from './stars';
 import {
-    Trash2, Plus, Gamepad2, Info, Tag,
-    DollarSign, Loader2, Search, X,
-    Sparkles, Layers, RefreshCw, Star, Eye
+    Gamepad2,
+    Plus,
+    RefreshCw,
+    Search,
+    Trash2,
+    Pencil,
+    X,
+    Star,
+    Eye,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const emptyGame = {
+    nombre: '',
+    precio: '',
+    plataforma: '',
+    caracteristicas: '',
+    puntuacion: 0,
+};
 
 const VideoGameList = () => {
     const [games, setGames] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [search, setSearch] = useState('');
-    const [newGame, setNewGame] = useState({ nombre: '', precio: '', plataforma: '', caracteristicas: '', puntuacion: 0 });
-    const [isAdding, setIsAdding] = useState(false);
+    const [formOpen, setFormOpen] = useState(false);
+    const [formMode, setFormMode] = useState('add');
+    const [activeId, setActiveId] = useState(null);
+    const [formState, setFormState] = useState(emptyGame);
 
     useEffect(() => {
         fetchGames();
@@ -24,286 +40,261 @@ const VideoGameList = () => {
         try {
             setLoading(true);
             const response = await videoGameApi.getAll();
-            setGames(response.data);
+            setGames(Array.isArray(response.data) ? response.data : []);
             setError(null);
         } catch (err) {
-            setError(err.response?.data || 'Failed to connect to the vault system.');
-            console.error(err);
+            console.error('Error fetching games:', err);
+            setGames([]);
+            const msg = err.response?.status === 401 
+                ? 'API requiere autenticacion. Configura tus credenciales o habilita acceso publico.' 
+                : err.response?.data || 'No se pudo cargar el catalogo.';
+            setError(msg);
         } finally {
             setLoading(false);
         }
     };
 
+    const openAdd = () => {
+        setFormMode('add');
+        setActiveId(null);
+        setFormState(emptyGame);
+        setFormOpen(true);
+    };
+
+    const openEdit = (game) => {
+        setFormMode('edit');
+        setActiveId(game.id);
+        setFormState({
+            nombre: game.nombre || '',
+            precio: game.precio ?? '',
+            plataforma: game.plataforma || '',
+            caracteristicas: game.caracteristicas || '',
+            puntuacion: game.puntuacion ?? 0,
+        });
+        setFormOpen(true);
+    };
+
+    const closeForm = () => {
+        setFormOpen(false);
+        setFormMode('add');
+        setActiveId(null);
+        setFormState(emptyGame);
+    };
+
     const handleDelete = async (id) => {
         try {
             await videoGameApi.delete(id);
-            setGames(games.filter(g => g.id !== id));
+            setGames((prev) => prev.filter((game) => game.id !== id));
         } catch (err) {
-            alert('Security protocol: Could not remove record.');
+            alert('No se pudo eliminar el videojuego.');
         }
     };
 
-    const handleAdd = async (e) => {
-        e.preventDefault();
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        const payload = {
+            ...formState,
+            precio: Number.parseFloat(formState.precio),
+            puntuacion: Number.parseInt(formState.puntuacion, 10) || 0,
+        };
+
         try {
-            const gameToSubmit = {
-                ...newGame,
-                precio: parseFloat(newGame.precio),
-                puntuacion: parseInt(newGame.puntuacion) || 0,
-                id: 0
-            };
-            await videoGameApi.create(gameToSubmit);
-            setNewGame({ nombre: '', precio: '', plataforma: '', caracteristicas: '', puntuacion: 0 });
-            setIsAdding(false);
+            if (formMode === 'add') {
+                await videoGameApi.create({ ...payload, id: 0 });
+            } else if (activeId != null) {
+                await videoGameApi.update(activeId, payload);
+            }
+            closeForm();
             fetchGames();
         } catch (err) {
-            alert('Validation Error: Data contains invalid parameters.');
+            alert('No se pudo guardar el videojuego.');
         }
     };
 
-    const filteredGames = games.filter(g =>
-        g.nombre.toLowerCase().includes(search.toLowerCase()) ||
-        g.plataforma.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredGames = useMemo(() => {
+        if (!Array.isArray(games)) return [];
+        const term = search.toLowerCase();
+        return games.filter(
+            (game) =>
+                (game?.nombre || '').toLowerCase().includes(term) ||
+                (game?.plataforma || '').toLowerCase().includes(term)
+        );
+    }, [games, search]);
 
     return (
-        <div className="container py-12">
-            {/* Hero Header */}
-            <motion.header
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-16"
-            >
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <section id="juegos" className="section">
+            <div className="wrap">
+                <div className="section-head">
                     <div>
-                        <div className="flex items-center gap-2 text-primary font-bold mb-2 tracking-widest text-sm uppercase">
-                            <Sparkles size={16} />
-                            <span>Vault Core v1.3</span>
-                        </div>
-                        <h1 className="text-5xl md:text-6xl font-extrabold mb-4 tracking-tight">
-                            Game <span className="text-accent-gradient">Vault</span>
-                        </h1>
-                        <p className="text-text-dim text-lg max-w-xl leading-relaxed">
-                            Highly secure management interface for your virtual assets.
-                            Integrated with distributed Ktor architecture.
+                        <p className="eyebrow">Catalogo en vivo</p>
+                        <h2 className="section-title">Videojuegos</h2>
+                        <p className="section-desc">
+                            Listado visual con herramientas para anadir, editar y eliminar juegos.
                         </p>
                     </div>
-                    <div className="flex gap-3">
-                        <button onClick={fetchGames} className="btn btn-ghost" title="Resync Data">
-                            <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+                    <div className="section-actions">
+                        <button className="button button-outline" onClick={fetchGames}>
+                            <RefreshCw size={18} /> Actualizar
                         </button>
-                        <button
-                            onClick={() => setIsAdding(!isAdding)}
-                            className="btn btn-primary"
+                        <button className="button button-primary" onClick={openAdd}>
+                            <Plus size={18} /> Nuevo videojuego
+                        </button>
+                    </div>
+                </div>
+
+                <div className="toolbar">
+                    <div className="search">
+                        <Search size={18} />
+                        <input
+                            type="search"
+                            placeholder="Buscar por nombre o plataforma"
+                            value={search}
+                            onChange={(event) => setSearch(event.target.value)}
+                        />
+                    </div>
+                </div>
+
+                <AnimatePresence>
+                    {formOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="panel form-panel"
                         >
-                            {isAdding ? <X size={20} /> : <Plus size={20} />}
-                            <span>{isAdding ? 'Abort' : 'New Entry'}</span>
-                        </button>
-                    </div>
-                </div>
-
-                {/* Search Bar */}
-                <div className="relative mt-10">
-                    <div className="absolute inset-y-0 left-4 flex items-center text-text-muted">
-                        <Search size={20} />
-                    </div>
-                    <input
-                        type="text"
-                        placeholder="Search by title or platform..."
-                        className="w-full pl-12 py-4 bg-white/5 border-glass-border focus:bg-white/10"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
-                </div>
-            </motion.header>
-
-            {/* Adding Form Section */}
-            <AnimatePresence>
-                {isAdding && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0, y: -20 }}
-                        animate={{ height: 'auto', opacity: 1, y: 0 }}
-                        exit={{ height: 0, opacity: 0, y: -20 }}
-                        className="overflow-hidden mb-16"
-                    >
-                        <form onSubmit={handleAdd} className="glass-card p-8 border-primary/20 bg-primary/5">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                <div className="input-group">
-                                    <label className="input-label">Title</label>
-                                    <input required value={newGame.nombre} onChange={e => setNewGame({ ...newGame, nombre: e.target.value })} placeholder="Masterpiece Name" />
-                                </div>
-                                <div className="input-group">
-                                    <label className="input-label">Price</label>
-                                    <input required type="number" step="0.01" value={newGame.precio} onChange={e => setNewGame({ ...newGame, precio: e.target.value })} placeholder="0.00" />
-                                </div>
-                                <div className="input-group">
-                                    <label className="input-label">Platform</label>
-                                    <input required value={newGame.plataforma} onChange={e => setNewGame({ ...newGame, plataforma: e.target.value })} placeholder="Target System" />
-                                </div>
-                                <div className="input-group">
-                                    <label className="input-label">Traits</label>
-                                    <input value={newGame.caracteristicas} onChange={e => setNewGame({ ...newGame, caracteristicas: e.target.value })} placeholder="Descriptors" />
-                                </div>
+                            <div className="panel-head">
+                                <h3>{formMode === 'add' ? 'Nuevo videojuego' : 'Editar videojuego'}</h3>
+                                <button type="button" className="button button-ghost" onClick={closeForm}>
+                                    <X size={18} /> Cerrar
+                                </button>
                             </div>
-                            <div className="mt-8 space-y-6">
-                                <motion.div 
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.2 }}
-                                    className="border-t border-primary/20 pt-8 p-6 rounded-xl bg-gradient-to-br from-primary/10 to-accent/5 border border-primary/30"
-                                >
-                                    <div className="flex items-center gap-3 mb-6">
-                                        <Star size={24} className="text-accent" />
-                                        <label className="input-label block m-0 font-bold text-lg">Rate this Game</label>
-                                    </div>
-                                    <StarRating 
-                                        initialRating={newGame.puntuacion} 
-                                        onRate={(rating) => setNewGame({ ...newGame, puntuacion: rating })}
+                            <form className="form-grid" onSubmit={handleSubmit}>
+                                <label className="form-field">
+                                    <span>Nombre</span>
+                                    <input
+                                        required
+                                        value={formState.nombre}
+                                        onChange={(event) =>
+                                            setFormState((prev) => ({ ...prev, nombre: event.target.value }))
+                                        }
+                                        placeholder="Ej: Ocean Drift"
                                     />
-                                </motion.div>
-                                <div className="flex justify-end gap-3 pt-4">
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setIsAdding(false)}
-                                        className="btn btn-ghost"
-                                    >
-                                        <X size={20} />
-                                        Cancel
-                                    </button>
-                                    <button type="submit" className="btn btn-primary px-10">
-                                        <Layers size={20} />
-                                        Authorize Entry
-                                    </button>
+                                </label>
+                                <label className="form-field">
+                                    <span>Precio</span>
+                                    <input
+                                        required
+                                        type="number"
+                                        step="0.01"
+                                        value={formState.precio}
+                                        onChange={(event) =>
+                                            setFormState((prev) => ({ ...prev, precio: event.target.value }))
+                                        }
+                                        placeholder="19.99"
+                                    />
+                                </label>
+                                <label className="form-field">
+                                    <span>Plataforma</span>
+                                    <input
+                                        required
+                                        value={formState.plataforma}
+                                        onChange={(event) =>
+                                            setFormState((prev) => ({ ...prev, plataforma: event.target.value }))
+                                        }
+                                        placeholder="PC / Consola"
+                                    />
+                                </label>
+                                <label className="form-field form-field-wide">
+                                    <span>Descripcion breve</span>
+                                    <textarea
+                                        rows={3}
+                                        value={formState.caracteristicas}
+                                        onChange={(event) =>
+                                            setFormState((prev) => ({ ...prev, caracteristicas: event.target.value }))
+                                        }
+                                        placeholder="Resumen del juego"
+                                    />
+                                </label>
+                                <div className="rating-box">
+                                    <div className="rating-title">
+                                        <Star size={18} />
+                                        <span>Puntuacion</span>
+                                    </div>
+                                    <StarRating
+                                        initialRating={formState.puntuacion}
+                                        onRate={(rating) =>
+                                            setFormState((prev) => ({ ...prev, puntuacion: rating }))
+                                        }
+                                    />
                                 </div>
-                            </div>
-                        </form>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Main Grid */}
-            {loading && games.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-32 opacity-50">
-                    <Loader2 className="animate-spin text-primary mb-4" size={48} />
-                    <p className="font-heading text-xl tracking-widest uppercase">Decrypting Vault...</p>
-                </div>
-            ) : (
-                <div className="grid-vault">
-                    <AnimatePresence mode="popLayout">
-                        {filteredGames.map((game, idx) => (
-                            <motion.div
-                                layout
-                                key={game.id}
-                                initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.8, x: -50 }}
-                                transition={{ duration: 0.3, delay: idx * 0.05 }}
-                                className="glass-card p-6 flex flex-col group"
-                            >
-                                <div className="flex justify-between items-start mb-6">
-                                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary transition-colors group-hover:bg-primary group-hover:text-white">
-                                        <Gamepad2 size={24} />
-                                    </div>
-                                    <div className="px-3 py-1 rounded-full bg-white/5 text-[10px] font-mono tracking-tighter text-text-dim border border-glass-border">
-                                        ID: {game.id.toString().padStart(4, '0')}
-                                    </div>
-                                </div>
-
-                                <h3 className="text-2xl font-bold mb-1 group-hover:text-primary transition-colors">
-                                    {game.nombre}
-                                </h3>
-                                <div className="flex items-center gap-2 text-primary font-semibold mb-6">
-                                    <Tag size={16} />
-                                    <span className="text-sm uppercase tracking-wider">{game.plataforma}</span>
-                                </div>
-
-                                <div className="mt-auto space-y-4">
-                                    <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-glass-border">
-                                        <div className="text-text-muted text-xs uppercase font-bold tracking-widest">Pricing</div>
-                                        <div className="text-2xl font-black font-heading text-accent">
-                                            {game.precio}<span className="text-sm ml-1">€</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <motion.div 
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            transition={{ delay: 0.1 }}
-                                            className="p-5 rounded-xl bg-gradient-to-br from-accent/15 to-primary/5 border border-accent/30 backdrop-blur-sm"
-                                        >
-                                            <div className="flex items-center gap-2 mb-4">
-                                                <Star size={18} className="text-accent" />
-                                                <span className="text-xs text-text-muted uppercase font-bold tracking-wider">Community Rating</span>
-                                            </div>
-                                            <StarRating 
-                                                initialRating={game.puntuacion ?? 0}
-                                                onRate={(rating) => {
-                                                    const updatedGames = games.map(g => 
-                                                        g.id === game.id ? { ...g, puntuacion: rating } : g
-                                                    );
-                                                    setGames(updatedGames);
-                                                }}
-                                            />
-                                        </motion.div>
-                                        <div className="flex items-center gap-2 p-3 rounded-lg bg-white/5 border border-glass-border">
-                                            <Eye size={16} className="text-blue-400" />
-                                            <div className="text-sm">
-                                                <div className="text-xs text-text-muted uppercase font-semibold">Visits</div>
-                                                <div className="text-lg font-bold">{game.visitas ?? 0}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <p className="text-sm text-text-dim line-clamp-2 italic px-2">
-                                        "{game.caracteristicas}"
-                                    </p>
-
-                                    <button
-                                        onClick={() => handleDelete(game.id)}
-                                        className="btn btn-danger-dim w-full mt-4"
-                                    >
-                                        <Trash2 size={18} />
-                                        <span>Deauthorize</span>
+                                <div className="form-actions">
+                                    <button type="submit" className="button button-primary">
+                                        {formMode === 'add' ? 'Guardar videojuego' : 'Guardar cambios'}
                                     </button>
                                 </div>
-                            </motion.div>
-                        ))}
-                    </AnimatePresence>
-                </div>
-            )}
+                            </form>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
-            {/* Error & Empty States */}
-            {!loading && filteredGames.length === 0 && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-center py-32 glass-card border-dashed border-2 bg-transparent"
-                >
-                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 text-text-muted">
-                        <Search size={32} />
+                {loading && games.length === 0 ? (
+                    <div className="empty-state">
+                        <div className="loader" />
+                        <p>Cargando catalogo...</p>
                     </div>
-                    <h3 className="text-2xl font-bold mb-2">No matching records</h3>
-                    <p className="text-text-dim">Try adjusting your search filters or add a new entry.</p>
-                </motion.div>
-            )}
+                ) : (
+                    <div className="card-grid">
+                        <AnimatePresence mode="popLayout">
+                            {filteredGames.map((game) => (
+                                <motion.article
+                                    layout
+                                    key={game.id}
+                                    initial={{ opacity: 0, y: 12 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -12 }}
+                                    className="card game-card"
+                                >
+                                    <div className="card-header">
+                                        <div className="icon-chip">
+                                            <Gamepad2 size={20} />
+                                        </div>
+                                        <span className="tag">ID {game.id}</span>
+                                    </div>
+                                    <h3>{game?.nombre || 'Sin nombre'}</h3>
+                                    <p className="card-meta">{game?.plataforma || 'Sin plataforma'}</p>
+                                    <p className="card-desc">{game?.caracteristicas || 'Sin descripcion.'}</p>
+                                    <div className="card-info">
+                                        <div>
+                                            <span className="label">Precio</span>
+                                            <p className="price">{(Number(game?.precio) || 0).toFixed(2)} EUR</p>
+                                        </div>
+                                        <div className="visits">
+                                            <Eye size={16} /> {game?.visitas ?? 0}
+                                        </div>
+                                    </div>
+                                    <div className="card-actions">
+                                        <button className="button button-outline" onClick={() => openEdit(game)}>
+                                            <Pencil size={16} /> Editar
+                                        </button>
+                                        <button className="button button-ghost" onClick={() => handleDelete(game.id)}>
+                                            <Trash2 size={16} /> Eliminar
+                                        </button>
+                                    </div>
+                                </motion.article>
+                            ))}
+                        </AnimatePresence>
+                    </div>
+                )}
 
-            {error && !loading && (
-                <div className="fixed bottom-8 right-8 max-w-md">
-                    <motion.div
-                        initial={{ x: 100, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        className="p-4 bg-danger/10 border border-danger/20 rounded-xl backdrop-blur-md flex gap-4 text-danger"
-                    >
-                        <Info size={24} />
-                        <div>
-                            <p className="font-bold">System Alert</p>
-                            <p className="text-sm opacity-80">{error}</p>
-                        </div>
-                    </motion.div>
-                </div>
-            )}
-        </div>
+                {!loading && filteredGames.length === 0 && (
+                    <div className="empty-state">
+                        <p>No hay videojuegos con esos filtros.</p>
+                    </div>
+                )}
+
+                {error && !loading && <div className="message message-error">{error}</div>}
+            </div>
+        </section>
     );
 };
 
