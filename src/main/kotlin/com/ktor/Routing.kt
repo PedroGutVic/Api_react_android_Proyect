@@ -165,7 +165,7 @@ fun Application.configureRouting() {
         3.- Que le pasemos la plataforma por query. Devuelve todos los videojuegos que tienen dicha plataforma.
          */
         authenticate("auth-jwt") {
-            get("/videogame") {
+            get("/api/videogame") {
 
                 val videoGameId = call.request.queryParameters["id"]
                 logger.warn("El id tiene de valor $videoGameId")
@@ -201,7 +201,7 @@ fun Application.configureRouting() {
         Endpoint que no es recomendable, porque no se debe utilizar parametros de url para filtrar. Para eso estan los de consulta.
          */
         authenticate("auth-jwt") {
-            get("/videogame/{videoGameId}") {
+            get("/api/videogame/{videoGameId}") {
 
                 //Comprobamos si se ha pasado el id por parametro
                 val videoGameId = call.parameters["videoGameId"]
@@ -324,7 +324,7 @@ fun Application.configureRouting() {
         }
 
 
-        route("/users") {
+        route("/api/users") {
             get {
                 val users = ProviderUserUseCase.getAllUsers()
                 call.respond(users)
