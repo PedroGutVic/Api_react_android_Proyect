@@ -53,9 +53,19 @@ object ProviderUserUseCase {
             logger.warn("No existen datos del usuario a actualizar")
             return false
         }
+        
+        logger.info("ProviderUserUseCase.updateUser called para id=$id con datos: " +
+            "username=${updateUser.username}, " +
+            "email=${updateUser.email}, " +
+            "role=${updateUser.role}, " +
+            "avatar_url=${updateUser.avatar_url}")
+        
         updateUserUseCase.updateUser = updateUser
         updateUserUseCase.id = id
-        return updateUserUseCase()
+        
+        val result = updateUserUseCase()
+        logger.info("ProviderUserUseCase.updateUser resultado para id=$id: $result")
+        return result
     }
 
     fun deleteUser(id: Int): Boolean {

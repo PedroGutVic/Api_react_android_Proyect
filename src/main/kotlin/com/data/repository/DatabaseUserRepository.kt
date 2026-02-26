@@ -189,18 +189,31 @@ class DatabaseUserRepository : UserInterface {
     }
 
     override fun updateUser(user: UpdateUser, id: Int): Boolean {
-        val existing = getUserById(id) ?: return false
+        val existing = getUserById(id)
+        if (existing == null) {
+            logger.warn("Usuario con id $id no encontrado para actualizar")
+            return false
+        }
+        
         val updated = existing.copy(
             username = user.username ?: existing.username,
             email = user.email ?: existing.email,
             role = user.role ?: existing.role,
             avatarUrl = user.avatar_url ?: existing.avatarUrl
         )
+        
+        logger.info("Preparando actualización de usuario $id: " +
+            "new_username=${updated.username}, " +
+            "new_email=${updated.email}, " +
+            "new_role=${updated.role}, " +
+            "new_avatar=${updated.avatarUrl}")
+        
         val sql = """
             UPDATE users
-            SET username = ?, email = ?, role = ?, avatar_url = ?
+            SET username = ?, email = ?, role = ?, avatar_url = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
         """.trimIndent()
+        
         return try {
             getConnection().use { connection ->
                 connection.prepareStatement(sql).use { statement ->
@@ -209,13 +222,23 @@ class DatabaseUserRepository : UserInterface {
                     statement.setString(3, updated.role)
                     statement.setString(4, updated.avatarUrl)
                     statement.setInt(5, id)
-                    statement.executeUpdate() > 0
+                    
+                    val rowsUpdated = statement.executeUpdate()
+                    logger.info("SQL UPDATE ejecutado para usuario $id: $rowsUpdated filas actualizadas")
+                    
+                    if (rowsUpdated > 0) {
+                        // Verificar que la actualización fue exitosa
+                        val verified = getUserById(id)
+                        logger.info("Verificación post-update de usuario $id: username=${verified?.username}, email=${verified?.email}, role=${verified?.role}")
+                    }
+                    
+                    rowsUpdated > 0
                 }
             }
-         } catch (e: SQLException) {
-             logger.error("Error actualizando usuario", e)
-             false
-         }
+        } catch (e: SQLException) {
+            logger.error("Error actualizando usuario $id: ${e.message} (SQL State: ${e.sqlState})", e)
+            false
+        }
     }
 
     override fun deleteUser(id: Int): Boolean {

@@ -323,106 +323,140 @@ fun Application.configureRouting() {
             }
         }
 
-
-        route("/api/users") {
-            get {
-                val users = ProviderUserUseCase.getAllUsers()
-                call.respond(users)
-            }
-            post {
-                try {
-                    val user = call.receive<User>()
-                    if (user.username.isBlank()) {
-                        call.respond(HttpStatusCode.BadRequest, "El username no puede estar vacio")
-                        return@post
+        // =============================================
+        // ENDPOINTS DE USUARIOS (Protegidos con JWT)
+        // =============================================
+        authenticate("auth-jwt") {
+            route("/api/users") {
+                get {
+                    val users = ProviderUserUseCase.getAllUsers()
+                    call.respond(users)
+                }
+                
+                post {
+                    try {
+                        val user = call.receive<User>()
+                        if (user.username.isBlank()) {
+                            call.respond(HttpStatusCode.BadRequest, "El username no puede estar vacio")
+                            return@post
+                        }
+                        if (user.email.isBlank() || !user.email.contains("@")) {
+                            call.respond(HttpStatusCode.BadRequest, "El email no es valido")
+                            return@post
+                        }
+                        val newId = ProviderUserUseCase.insertUser(user)
+                        if (newId == null) {
+                            call.respond(HttpStatusCode.Conflict, "El usuario no pudo insertarse. Puede que ya exista")
+                            return@post
+                        }
+                        call.respond(HttpStatusCode.Created, "Se ha insertado correctamente con id =  $newId")
+                    } catch (e: IllegalStateException) {
+                        call.respond(HttpStatusCode.BadRequest, "Error en el formato de envio de datos o lectura del cuerpo.")
+                    } catch (e: JsonConvertException) {
+                        call.respond(HttpStatusCode.BadRequest, "Problemas en la conversion json")
                     }
-                    if (user.email.isBlank() || !user.email.contains("@")) {
-                        call.respond(HttpStatusCode.BadRequest, "El email no es valido")
-                        return@post
+                }
+
+                get("/{userId}") {
+                    val userId = call.parameters["userId"]
+                    if (userId == null) {
+                        call.respond(HttpStatusCode.BadRequest, "Debes pasar el id a buscar")
+                        return@get
                     }
-                    val newId = ProviderUserUseCase.insertUser(user)
-                    if (newId == null) {
-                        call.respond(HttpStatusCode.Conflict, "El usuario no pudo insertarse. Puede que ya exista")
-                        return@post
+
+                    val id = userId.toIntOrNull()
+                    if (id == null) {
+                        call.respond(HttpStatusCode.BadRequest, "El id debe ser un numero entero")
+                        return@get
                     }
-                    call.respond(HttpStatusCode.Created, "Se ha insertado correctamente con id =  $newId")
-                } catch (e: IllegalStateException) {
-                    call.respond(HttpStatusCode.BadRequest, "Error en el formato de envio de datos o lectura del cuerpo.")
-                } catch (e: JsonConvertException) {
-                    call.respond(HttpStatusCode.BadRequest, "Problemas en la conversion json")
-                }
-            }
 
-            get("/{userId}") {
-                val userId = call.parameters["userId"]
-                if (userId == null) {
-                    call.respond(HttpStatusCode.BadRequest, "Debes pasar el id a buscar")
-                    return@get
+                    val user = ProviderUserUseCase.getUserById(id)
+                    if (user == null) {
+                        call.respond(HttpStatusCode.NotFound, "Usuario no encontrado")
+                        return@get
+                    }
+                    call.respond(user)
                 }
 
-                val id = userId.toIntOrNull()
-                if (id == null) {
-                    call.respond(HttpStatusCode.BadRequest, "El id debe ser un numero entero")
-                    return@get
+                patch("/{userId}") {
+                    try {
+                        val userId = call.parameters["userId"]
+                        val id = userId?.toIntOrNull()
+                        if (id == null) {
+                            call.respond(HttpStatusCode.BadRequest, "Debes identificar el usuario con un id valido")
+                            return@patch
+                        }
+                        
+                        // Validación de permisos: solo admin o el propietario del perfil
+                        val userRole = call.userRole
+                        val userIdFromToken = call.userId
+                        if (userRole != "admin" && userIdFromToken != id) {
+                            call.respond(HttpStatusCode.Forbidden, mapOf("error" to "No tienes permisos para actualizar este usuario"))
+                            return@patch
+                        }
+                        
+                        val updateUser = call.receive<UpdateUser>()
+                        if (updateUser.username != null && updateUser.username.isBlank()) {
+                            call.respond(HttpStatusCode.BadRequest, "El username no puede estar vacio")
+                            return@patch
+                        }
+                        if (updateUser.email != null && (updateUser.email.isBlank() || !updateUser.email.contains("@"))) {
+                            call.respond(HttpStatusCode.BadRequest, "El email no es valido")
+                            return@patch
+                        }
+                        if (updateUser.role != null && updateUser.role !in listOf("admin", "user", "usuario")) {
+                            call.respond(HttpStatusCode.BadRequest, "El rol debe ser 'admin', 'user' o 'usuario'")
+                            return@patch
+                        }
+                        
+                        // Solo admins pueden cambiar roles
+                        if (updateUser.role != null && userRole != "admin") {
+                            call.respond(HttpStatusCode.Forbidden, mapOf("error" to "Solo los administradores pueden cambiar roles"))
+                            return@patch
+                        }
+                        
+                        logger.info("Actualizando usuario $id: username=${updateUser.username}, email=${updateUser.email}, role=${updateUser.role}")
+                        
+                        val res = ProviderUserUseCase.updateUser(updateUser, id)
+                        if (!res) {
+                            call.respond(HttpStatusCode.Conflict, "El usuario no pudo modificarse. Puede que no exista")
+                            return@patch
+                        }
+                        call.respond(HttpStatusCode.OK, mapOf("message" to "Se ha actualizado correctamente con id = $id"))
+                    } catch (e: IllegalStateException) {
+                        logger.error("Error en PATCH /api/users: ${e.message}", e)
+                        call.respond(HttpStatusCode.BadRequest, "Error en el formato de envio de los datos o lectura del cuerpo.")
+                    } catch (e: JsonConvertException) {
+                        logger.error("Error de JSON en PATCH /api/users: ${e.message}", e)
+                        call.respond(HttpStatusCode.BadRequest, "Error en el formato de json")
+                    } catch (e: Exception) {
+                        logger.error("Error inesperado en PATCH /api/users: ${e.message}", e)
+                        call.respond(HttpStatusCode.InternalServerError, "Error interno del servidor")
+                    }
                 }
 
-                val user = ProviderUserUseCase.getUserById(id)
-                if (user == null) {
-                    call.respond(HttpStatusCode.NotFound, "Usuario no encontrado")
-                    return@get
-                }
-                call.respond(user)
-            }
-
-            patch("/{userId}") {
-                try {
+                delete("/{userId}") {
+                    val userRole = call.userRole
+                    if (userRole != "admin") {
+                        call.respond(HttpStatusCode.Forbidden, mapOf("error" to "No tienes permisos para eliminar usuarios"))
+                        return@delete
+                    }
+                    
                     val userId = call.parameters["userId"]
                     val id = userId?.toIntOrNull()
+                    logger.warn("Queremos borrar el usuario con id $userId")
                     if (id == null) {
-                        call.respond(HttpStatusCode.BadRequest, "Debes identificar el usuario con un id valido")
-                        return@patch
+                        call.respond(HttpStatusCode.BadRequest, "Debes identificar el usuario")
+                        return@delete
                     }
-                    val updateUser = call.receive<UpdateUser>()
-                    if (updateUser.username != null && updateUser.username.isBlank()) {
-                        call.respond(HttpStatusCode.BadRequest, "El username no puede estar vacio")
-                        return@patch
-                    }
-                    if (updateUser.email != null && (updateUser.email.isBlank() || !updateUser.email.contains("@"))) {
-                        call.respond(HttpStatusCode.BadRequest, "El email no es valido")
-                        return@patch
-                    }
-                    if (updateUser.role != null && updateUser.role !in listOf("admin", "user", "usuario")) {
-                        call.respond(HttpStatusCode.BadRequest, "El rol debe ser 'admin', 'user' o 'usuario'")
-                        return@patch
-                    }
-                    val res = ProviderUserUseCase.updateUser(updateUser, id)
+                    val res = ProviderUserUseCase.deleteUser(id)
                     if (!res) {
-                        call.respond(HttpStatusCode.Conflict, "El usuario no pudo modificarse. Puede que no exista")
-                        return@patch
+                        call.respond(HttpStatusCode.NotFound, "Usuario no encontrado para borrar")
+                    } else {
+                        call.respond(HttpStatusCode.NoContent)
                     }
-                    call.respond(HttpStatusCode.Created, "Se ha actualizado correctamente con id =  $id")
-                } catch (e: IllegalStateException) {
-                    call.respond(HttpStatusCode.BadRequest, "Error en el formato de envio de los datos o lectura del cuerpo.")
-                } catch (e: JsonConvertException) {
-                    call.respond(HttpStatusCode.BadRequest, "Error en el formato de json")
-                }
-            }
-
-            delete("/{userId}") {
-                val userId = call.parameters["userId"]
-                val id = userId?.toIntOrNull()
-                ProviderUserUseCase.logger.warn("Queremos borrar el usuario con id $userId")
-                if (id == null) {
-                    call.respond(HttpStatusCode.BadRequest, "Debes identificar el usuario")
                     return@delete
                 }
-                val res = ProviderUserUseCase.deleteUser(id)
-                if (!res) {
-                    call.respond(HttpStatusCode.NotFound, "Usuario no encontrado para borrar")
-                } else {
-                    call.respond(HttpStatusCode.NoContent)
-                }
-                return@delete
             }
         }
 
