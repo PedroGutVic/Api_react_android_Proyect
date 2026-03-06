@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     role ENUM('user', 'admin') NOT NULL DEFAULT 'user',
-    avatar_url VARCHAR(500) NULL,
+    avatar_url LONGTEXT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     refresh_token_hash VARCHAR(255) NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

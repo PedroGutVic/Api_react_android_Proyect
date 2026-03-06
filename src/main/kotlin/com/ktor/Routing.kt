@@ -227,7 +227,7 @@ fun Application.configureRouting() {
 
 
         authenticate("auth-jwt") {
-            post("/videogame") {
+            post("/api/videogame") {
                 val userRole = call.userRole
                 if (userRole != "admin") {
                     call.respond(HttpStatusCode.Forbidden, mapOf("error" to "No tienes permisos para crear videojuegos"))
@@ -268,7 +268,7 @@ fun Application.configureRouting() {
         }
 
         authenticate("auth-jwt") {
-            patch("/videogame/{videoGameId}") {
+            patch("/api/videogame/{videoGameId}") {
                 val userRole = call.userRole
                 if (userRole != "admin") {
                     call.respond(HttpStatusCode.Forbidden, mapOf("error" to "No tienes permisos para editar videojuegos"))
@@ -299,7 +299,7 @@ fun Application.configureRouting() {
 
 
         authenticate("auth-jwt") {
-            delete("/videogame/{videoGameId}") {
+            delete("/api/videogame/{videoGameId}") {
                 val userRole = call.userRole
                 if (userRole != "admin") {
                     call.respond(HttpStatusCode.Forbidden, mapOf("error" to "No tienes permisos para eliminar videojuegos"))
