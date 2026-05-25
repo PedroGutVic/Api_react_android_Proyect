@@ -11,6 +11,7 @@ import {
     X,
     Shield,
     UserCheck,
+    Sparkles,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -100,14 +101,11 @@ const UserManagement = () => {
         }
         if (editUser.avatar_url.trim()) {
             payload.avatar_url = editUser.avatar_url.trim();
+        } else {
+            payload.avatar_url = null;
         }
-        if (editUser.role && editUser.role !== users.find(u => u.id === editingUserId)?.role) {
+        if (editUser.role) {
             payload.role = editUser.role;
-        }
-
-        if (Object.keys(payload).length === 0) {
-            alert('No se detectaron cambios.');
-            return;
         }
 
         try {
@@ -120,6 +118,7 @@ const UserManagement = () => {
     };
 
     const handleDelete = async (id) => {
+        if (!confirm('¿Estás seguro de que deseas desactivar/eliminar a este usuario?')) return;
         try {
             await userApi.delete(id);
             setUsers((prev) => prev.filter((user) => user.id !== id));
@@ -140,203 +139,249 @@ const UserManagement = () => {
     return (
         <section id="usuarios" className="section">
             <div className="wrap">
+                {/* Cabecera del Panel de Control */}
                 <div className="section-head">
                     <div>
-                        <p className="eyebrow">Comunidad</p>
-                        <h2 className="section-title">Usuarios</h2>
+                        <p className="eyebrow">Administración</p>
+                        <h2 className="section-title">Comunidad y Usuarios</h2>
                         <p className="section-desc">
-                            Administra perfiles con un panel claro y ordenado.
+                            Gestiona perfiles, asigna roles de administración y supervisa a los miembros registrados.
                         </p>
                     </div>
                     <div className="section-actions">
-                        <button onClick={fetchUsers} className="button button-outline">
-                            <RefreshCw size={18} /> Actualizar
+                        <button onClick={fetchUsers} className="button button-outline" title="Actualizar Directorio">
+                            <RefreshCw size={16} /> Actualizar
                         </button>
-                        <button onClick={() => setIsAdding((prev) => !prev)} className="button button-primary">
-                            {isAdding ? <X size={18} /> : <UserPlus size={18} />} {isAdding ? 'Cerrar' : 'Nuevo usuario'}
+                        <button onClick={() => setIsAdding(true)} className="button button-primary">
+                            <UserPlus size={16} /> Nuevo usuario
                         </button>
                     </div>
                 </div>
 
+                {/* Filtro de Búsqueda */}
                 <div className="toolbar">
                     <div className="search">
                         <Search size={18} />
                         <input
                             type="search"
-                            placeholder="Buscar por username o email"
+                            placeholder="Buscar por nombre o dirección de correo..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
                 </div>
 
+                {/* Modal Crear Usuario */}
                 <AnimatePresence>
                     {isAdding && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="panel form-panel"
-                        >
-                            <div className="panel-head">
-                                <h3>Nuevo usuario</h3>
-                                <button type="button" className="button button-ghost" onClick={() => setIsAdding(false)}>
-                                    <X size={18} /> Cerrar
-                                </button>
-                            </div>
-                            <form onSubmit={handleAdd} className="form-grid">
-                                <label className="form-field">
-                                    <span>Username</span>
-                                    <input
-                                        required
-                                        value={newUser.username}
-                                        onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                                        placeholder="Nombre de usuario"
-                                    />
-                                </label>
-                                <label className="form-field">
-                                    <span>Email</span>
-                                    <input
-                                        required
-                                        type="email"
-                                        value={newUser.email}
-                                        onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                                        placeholder="usuario@dominio.com"
-                                    />
-                                </label>
-                                <label className="form-field">
-                                    <span>Rol</span>
-                                    <select
-                                        value={newUser.role}
-                                        onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                                    >
-                                        <option value="user">Usuario</option>
-                                        <option value="admin">Admin</option>
-                                    </select>
-                                </label>
-                                <label className="form-field form-field-wide">
-                                    <span>Avatar URL</span>
-                                    <input
-                                        value={newUser.avatar_url}
-                                        onChange={(e) => setNewUser({ ...newUser, avatar_url: e.target.value })}
-                                        placeholder="https://..."
-                                    />
-                                </label>
-                                <div className="form-actions">
-                                    <button type="submit" className="button button-primary">
-                                        Guardar usuario
+                        <div className="modal-overlay" onClick={() => setIsAdding(false)}>
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.96, y: 15 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.96, y: 15 }}
+                                transition={{ duration: 0.25 }}
+                                className="modal-content"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="modal-header">
+                                    <h3 style={{ fontFamily: 'Fraunces', fontSize: '22px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <Sparkles size={20} style={{ color: 'var(--teal)' }} />
+                                        Registrar Nuevo Usuario
+                                    </h3>
+                                    <button type="button" className="theme-toggle" onClick={() => setIsAdding(false)}>
+                                        <X size={18} />
                                     </button>
                                 </div>
-                            </form>
-                        </motion.div>
+                                <div className="modal-body">
+                                    <form onSubmit={handleAdd} className="form">
+                                        <div className="form-grid">
+                                            <label className="form-field">
+                                                <span>Username</span>
+                                                <input
+                                                    required
+                                                    value={newUser.username}
+                                                    onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                                                    placeholder="Ej: lucas_gamer"
+                                                />
+                                            </label>
+                                            <label className="form-field">
+                                                <span>Correo Electrónico</span>
+                                                <input
+                                                    required
+                                                    type="email"
+                                                    value={newUser.email}
+                                                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                                                    placeholder="correo@dominio.com"
+                                                />
+                                            </label>
+                                            <label className="form-field">
+                                                <span>Rol Administrativo</span>
+                                                <select
+                                                    value={newUser.role}
+                                                    onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                                                >
+                                                    <option value="user">Usuario Común</option>
+                                                    <option value="admin">Administrador</option>
+                                                </select>
+                                            </label>
+                                        </div>
+                                        <label className="form-field">
+                                            <span>URL de Imagen del Avatar</span>
+                                            <input
+                                                value={newUser.avatar_url}
+                                                onChange={(e) => setNewUser({ ...newUser, avatar_url: e.target.value })}
+                                                placeholder="https://images.unsplash.com/..."
+                                            />
+                                        </label>
+                                        <div className="form-actions">
+                                            <button type="button" className="button button-ghost" onClick={() => setIsAdding(false)}>
+                                                Cancelar
+                                            </button>
+                                            <button type="submit" className="button button-primary">
+                                                Registrar Miembro
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </motion.div>
+                        </div>
                     )}
                 </AnimatePresence>
 
+                {/* Modal Editar Usuario */}
                 <AnimatePresence>
                     {editingUserId != null && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="panel form-panel"
-                        >
-                            <div className="panel-head">
-                                <h3>Editar usuario</h3>
-                                <button type="button" className="button button-ghost" onClick={cancelEditing}>
-                                    <X size={18} /> Cerrar
-                                </button>
-                            </div>
-                            <form onSubmit={handleUpdate} className="form-grid">
-                                <label className="form-field">
-                                    <span>Username</span>
-                                    <input
-                                        value={editUser.username}
-                                        onChange={(e) => setEditUser({ ...editUser, username: e.target.value })}
-                                    />
-                                </label>
-                                <label className="form-field">
-                                    <span>Email</span>
-                                    <input
-                                        type="email"
-                                        value={editUser.email}
-                                        onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
-                                    />
-                                </label>
-                                <label className="form-field">
-                                    <span>Rol</span>
-                                    <select
-                                        value={editUser.role}
-                                        onChange={(e) => setEditUser({ ...editUser, role: e.target.value })}
-                                    >
-                                        <option value="user">Usuario</option>
-                                        <option value="admin">Admin</option>
-                                    </select>
-                                </label>
-                                <label className="form-field form-field-wide">
-                                    <span>Avatar URL</span>
-                                    <input
-                                        value={editUser.avatar_url}
-                                        onChange={(e) => setEditUser({ ...editUser, avatar_url: e.target.value })}
-                                    />
-                                </label>
-                                <div className="form-actions">
-                                    <button type="submit" className="button button-primary">
-                                        Guardar cambios
+                        <div className="modal-overlay" onClick={cancelEditing}>
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.96, y: 15 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.96, y: 15 }}
+                                transition={{ duration: 0.25 }}
+                                className="modal-content"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="modal-header">
+                                    <h3 style={{ fontFamily: 'Fraunces', fontSize: '22px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <Pencil size={18} style={{ color: 'var(--teal)' }} />
+                                        Modificar Datos de Usuario
+                                    </h3>
+                                    <button type="button" className="theme-toggle" onClick={cancelEditing}>
+                                        <X size={18} />
                                     </button>
                                 </div>
-                            </form>
-                        </motion.div>
+                                <div className="modal-body">
+                                    <form onSubmit={handleUpdate} className="form">
+                                        <div className="form-grid">
+                                            <label className="form-field">
+                                                <span>Username</span>
+                                                <input
+                                                    required
+                                                    value={editUser.username}
+                                                    onChange={(e) => setEditUser({ ...editUser, username: e.target.value })}
+                                                />
+                                            </label>
+                                            <label className="form-field">
+                                                <span>Correo Electrónico</span>
+                                                <input
+                                                    required
+                                                    type="email"
+                                                    value={editUser.email}
+                                                    onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
+                                                />
+                                            </label>
+                                            <label className="form-field">
+                                                <span>Rol de Usuario</span>
+                                                <select
+                                                    value={editUser.role}
+                                                    onChange={(e) => setEditUser({ ...editUser, role: e.target.value })}
+                                                >
+                                                    <option value="user">Usuario Común</option>
+                                                    <option value="admin">Administrador</option>
+                                                </select>
+                                            </label>
+                                        </div>
+                                        <label className="form-field">
+                                            <span>URL de Imagen del Avatar</span>
+                                            <input
+                                                value={editUser.avatar_url}
+                                                onChange={(e) => setEditUser({ ...editUser, avatar_url: e.target.value })}
+                                            />
+                                        </label>
+                                        <div className="form-actions">
+                                            <button type="button" className="button button-ghost" onClick={cancelEditing}>
+                                                Descartar
+                                            </button>
+                                            <button type="submit" className="button button-primary">
+                                                Guardar Cambios
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </motion.div>
+                        </div>
                     )}
                 </AnimatePresence>
 
+                {/* Directorio de tarjetas de usuario */}
                 {loading && users.length === 0 ? (
-                    <div className="empty-state">
+                    <div className="empty-state" style={{ height: '350px' }}>
                         <div className="loader" />
-                        <p>Cargando usuarios...</p>
+                        <p style={{ fontWeight: '600' }}>Cargando directorio de usuarios...</p>
                     </div>
                 ) : (
-                    <div className="card-grid user-grid">
+                    <div className="card-grid">
                         <AnimatePresence mode="popLayout">
                             {filteredUsers.map((user) => (
                                 <motion.article
                                     layout
                                     key={user.id}
-                                    initial={{ opacity: 0, y: 12 }}
+                                    initial={{ opacity: 0, y: 16 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -12 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    transition={{ duration: 0.25 }}
                                     className="card user-card"
                                 >
-                                    <div className="card-header">
+                                    <div className="card-header" style={{ borderBottom: '1px solid var(--line)', paddingBottom: '16px', marginBottom: '10px' }}>
                                         <div className="avatar">
-                                            {user?.avatar_url ? (
-                                                <img src={user.avatar_url} alt={user?.username || 'Usuario'} />
+                                            {user?.avatar_url || user?.avatarUrl ? (
+                                                <img src={user.avatar_url || user.avatarUrl} alt={user?.username || 'Miembro'} />
                                             ) : (
-                                                <Users size={20} />
+                                                <Users size={22} />
                                             )}
                                         </div>
                                         <span className="tag">ID {user?.id || 'N/A'}</span>
                                     </div>
-                                    <h3>{user?.username || 'Sin username'}</h3>
-                                    <p className="card-meta">
-                                        <Mail size={16} /> {user?.email || 'Sin email'}
+                                    
+                                    <h3 style={{ fontFamily: 'Fraunces', fontSize: '20px', fontWeight: '700' }}>
+                                        {user?.username || 'Sin username'}
+                                    </h3>
+                                    
+                                    <p className="card-meta" style={{ fontSize: '14px', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <Mail size={14} /> {user?.email || 'Sin correo registrado'}
                                     </p>
-                                    <div className="role-row">
+                                    
+                                    <div style={{ marginTop: '8px' }}>
                                         {user?.role === 'admin' ? (
                                             <span className="role-badge role-admin">
-                                                <Shield size={14} /> Admin
+                                                <Shield size={12} /> Administrador
                                             </span>
                                         ) : (
                                             <span className="role-badge role-user">
-                                                <UserCheck size={14} /> Usuario
+                                                <UserCheck size={12} /> Miembro Común
                                             </span>
                                         )}
                                     </div>
-                                    <div className="card-actions">
+                                    
+                                    <div className="card-actions" style={{ borderTop: '1px solid var(--line)', paddingTop: '16px', marginTop: '16px' }}>
                                         <button className="button button-outline" onClick={() => startEditing(user)}>
-                                            <Pencil size={16} /> Editar
+                                            <Pencil size={14} /> Modificar
                                         </button>
-                                        <button className="button button-ghost" onClick={() => handleDelete(user.id)}>
-                                            <Trash2 size={16} /> Eliminar
+                                        <button 
+                                            className="button button-ghost" 
+                                            style={{ color: '#ef4444' }} 
+                                            onClick={() => handleDelete(user.id)}
+                                        >
+                                            <Trash2 size={14} /> Eliminar
                                         </button>
                                     </div>
                                 </motion.article>
@@ -345,9 +390,14 @@ const UserManagement = () => {
                     </div>
                 )}
 
+                {/* Búsqueda vacía */}
                 {!loading && filteredUsers.length === 0 && (
                     <div className="empty-state">
-                        <p>No hay usuarios para mostrar.</p>
+                        <Users size={48} style={{ color: 'var(--muted)', opacity: 0.6 }} />
+                        <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--ink)' }}>Directorio vacío</h3>
+                        <p style={{ maxWidth: '300px' }}>
+                            No hay miembros que coincidan con los criterios de búsqueda actuales.
+                        </p>
                     </div>
                 )}
 

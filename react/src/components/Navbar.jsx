@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Home, Gamepad2, Users, LogIn, UserPlus } from 'lucide-react';
+import { LogOut, Home, Gamepad2, Users, LogIn, UserPlus, Sun, Moon } from 'lucide-react';
 import authService from '../api/auth';
 
 const Navbar = () => {
@@ -7,6 +8,22 @@ const Navbar = () => {
   const location = useLocation();
   const isAuthenticated = authService.isAuthenticated();
   const user = authService.getUser();
+
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved) return saved === 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDark]);
 
   const handleLogout = () => {
     authService.logout();
@@ -20,7 +37,7 @@ const Navbar = () => {
   return (
     <header className="nav">
       <Link to="/" className="nav-brand">
-        Arcadia Vault
+        🎮 Arcadia Vault
       </Link>
       
       <nav className="nav-links">
@@ -42,12 +59,21 @@ const Navbar = () => {
       </nav>
 
       <div className="nav-actions">
+        <button 
+          onClick={() => setIsDark(!isDark)} 
+          className="theme-toggle" 
+          title="Cambiar Modo"
+          aria-label="Cambiar Modo"
+        >
+          {isDark ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+
         {isAuthenticated ? (
           <>
-            <span className="user-info">
+            <Link to="/perfil" className="user-info" title="Ver mi perfil" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
               Hola, <strong>{user?.username}</strong>
               {user?.role === 'admin' && <span className="admin-badge">Admin</span>}
-            </span>
+            </Link>
             <button className="button button-outline" onClick={handleLogout}>
               <LogOut size={18} /> Cerrar sesion
             </button>

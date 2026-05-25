@@ -91,6 +91,8 @@ export const videoGameApi = {
   update: (id, videoGame) => client.patch(`/videogame/${id}`, videoGame),
   delete: (id) => client.delete(`/videogame/${id}`),
   incrementVisit: (id) => client.post(`/videogame/${id}/visit`),
+  rateGame: (id, rating) => client.post(`/videogame/${id}/rate`, { rating }),
+  getMyRating: (id) => client.get(`/videogame/${id}/my-rating`),
 };
 
 export const userApi = {
@@ -102,4 +104,3 @@ export const userApi = {
 };
 
 export default client;
- 

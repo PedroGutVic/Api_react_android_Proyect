@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useState } from 'react';
 import { videoGameApi } from '../api/client';
 import { authService } from '../api/auth';
@@ -20,7 +21,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Resolutor dinámico de portadas para dar un look premium y evitar placeholders
 const getGameCoverUrl = (nombre = '', plataforma = '') => {
     const name = nombre.toLowerCase();
     
@@ -52,7 +52,6 @@ const getGameCoverUrl = (nombre = '', plataforma = '') => {
         return 'https://images.unsplash.com/photo-1607988795691-3d0147b43231?q=80&w=600&auto=format&fit=crop';
     }
     
-    // Fallbacks por plataforma
     const plat = plataforma.toLowerCase();
     if (plat.includes('switch') || plat.includes('nintendo')) {
         return 'https://images.unsplash.com/photo-1585412727339-54e4bae3bbf9?q=80&w=600&auto=format&fit=crop';
@@ -64,7 +63,6 @@ const getGameCoverUrl = (nombre = '', plataforma = '') => {
         return 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600&auto=format&fit=crop';
     }
     
-    // Fallback general
     return 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=600&auto=format&fit=crop';
 };
 
@@ -88,8 +86,8 @@ const VideoGameList = () => {
     const [userRole, setUserRole] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
     const [detailGame, setDetailGame] = useState(null);
+    const [myRating, setMyRating] = useState(0);
 
-    // Nuevos estados para filtros, ordenamiento y favoritos
     const [platformFilter, setPlatformFilter] = useState('all');
     const [sortBy, setSortBy] = useState('default');
     const [favorites, setFavorites] = useState([]);
@@ -101,7 +99,6 @@ const VideoGameList = () => {
         setCurrentUser(user);
         setUserRole(user?.role || null);
         
-        // Cargar favoritos guardados localmente para el usuario actual
         const userId = user?.id || 'guest';
         const savedFavs = localStorage.getItem(`favs_${userId}`);
         if (savedFavs) {
@@ -191,17 +188,30 @@ const VideoGameList = () => {
     const openDetail = async (game) => {
         const updated = { ...game, visitas: (game.visitas ?? 0) + 1 };
         setDetailGame(updated);
-        setGames((prev) =>
-            prev.map((g) => (g.id === game.id ? updated : g))
-        );
+        setMyRating(0);
+        setGames((prev) => prev.map((g) => (g.id === game.id ? updated : g)));
         try {
             await videoGameApi.incrementVisit(game.id);
-        } catch {
-            // silent: la visita optimista ya se mostró
-        }
+        } catch {}
+        try {
+            const res = await videoGameApi.getMyRating(game.id);
+            setMyRating(res.data.rating ?? 0);
+        } catch {}
     };
 
-    // Alternar favoritos localmente
+    const handleRate = async (rating) => {
+        if (!detailGame) return;
+        try {
+            const res = await videoGameApi.rateGame(detailGame.id, rating);
+            const newAvg = res.data.newAverage;
+            setMyRating(rating);
+            setDetailGame((prev) => ({ ...prev, puntuacion: newAvg }));
+            setGames((prev) =>
+                prev.map((g) => (g.id === detailGame.id ? { ...g, puntuacion: newAvg } : g))
+            );
+        } catch {}
+    };
+
     const toggleFavorite = (gameId) => {
         const userId = currentUser?.id || 'guest';
         let updated;
@@ -214,32 +224,26 @@ const VideoGameList = () => {
         localStorage.setItem(`favs_${userId}`, JSON.stringify(updated));
     };
 
-    // Cálculos para el Dashboard de estadísticas
     const stats = useMemo(() => {
         if (!Array.isArray(games) || games.length === 0) {
             return { count: 0, avgRating: '0.0', totalValue: '0.00', mostPopular: 'N/A' };
         }
 
         const count = games.length;
-        
         const sumRating = games.reduce((acc, g) => acc + (g.puntuacion || 0), 0);
         const avgRating = (sumRating / count).toFixed(1);
-
         const sumPrice = games.reduce((acc, g) => acc + (Number(g.precio) || 0), 0);
         const totalValue = sumPrice.toFixed(2);
-
         const sortedByVisits = [...games].sort((a, b) => (b.visitas || 0) - (a.visitas || 0));
         const mostPopular = sortedByVisits[0]?.nombre || 'Ninguno';
 
         return { count, avgRating, totalValue, mostPopular };
     }, [games]);
 
-    // Filtrado y Ordenamiento inteligente combinado
     const filteredAndSortedGames = useMemo(() => {
         if (!Array.isArray(games)) return [];
         let result = [...games];
 
-        // 1. Filtrado por término de búsqueda
         const term = search.toLowerCase();
         if (term) {
             result = result.filter(
@@ -249,7 +253,6 @@ const VideoGameList = () => {
             );
         }
 
-        // 2. Filtrado por plataforma específica
         if (platformFilter !== 'all') {
             result = result.filter((game) => {
                 const plat = (game?.plataforma || '').toLowerCase();
@@ -262,12 +265,10 @@ const VideoGameList = () => {
             });
         }
 
-        // 3. Filtrado por Favoritos
         if (showFavsOnly) {
             result = result.filter((game) => favorites.includes(game.id));
         }
 
-        // 4. Ordenamiento
         if (sortBy === 'price-asc') {
             result.sort((a, b) => (Number(a.precio) || 0) - (Number(b.precio) || 0));
         } else if (sortBy === 'price-desc') {
@@ -286,7 +287,6 @@ const VideoGameList = () => {
     return (
         <section id="juegos" className="section">
             <div className="wrap">
-                {/* Cabecera de la sección */}
                 <div className="section-head">
                     <div>
                         <p className="eyebrow">Catálogo en vivo</p>
@@ -307,7 +307,6 @@ const VideoGameList = () => {
                     </div>
                 </div>
 
-                {/* Dashboard de Estadísticas */}
                 <div className="dashboard-grid">
                     <div className="dashboard-card">
                         <div className="dashboard-icon">
@@ -349,7 +348,6 @@ const VideoGameList = () => {
                     </div>
                 </div>
 
-                {/* Barra de herramientas de filtros y búsqueda */}
                 <div className="toolbar">
                     <div className="search">
                         <Search size={18} />
@@ -385,7 +383,6 @@ const VideoGameList = () => {
                     </div>
                 </div>
 
-                {/* Filtros Rápidos por Consolas */}
                 <div className="platform-filters">
                     <button
                         className={`platform-filter-btn ${platformFilter === 'all' ? 'active' : ''}`}
@@ -424,7 +421,7 @@ const VideoGameList = () => {
                     </button>
                 </div>
 
-                {/* Modal de Crear / Editar Videojuego */}
+                {/* Modal Crear / Editar */}
                 <AnimatePresence>
                     {formOpen && (
                         <div className="modal-overlay" onClick={closeForm}>
@@ -529,7 +526,7 @@ const VideoGameList = () => {
                     )}
                 </AnimatePresence>
 
-                {/* Modal de Detalle del Juego */}
+                {/* Modal Detalle */}
                 <AnimatePresence>
                     {detailGame && (
                         <div className="modal-overlay" onClick={() => setDetailGame(null)}>
@@ -541,7 +538,6 @@ const VideoGameList = () => {
                                 className="modal-content modal-detail"
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                {/* Portada grande */}
                                 <div className="modal-detail-banner">
                                     <img
                                         src={getGameCoverUrl(detailGame.nombre, detailGame.plataforma)}
@@ -564,12 +560,10 @@ const VideoGameList = () => {
                                     </button>
                                 </div>
 
-                                {/* Cuerpo del detalle */}
                                 <div className="modal-detail-body">
-                                    {/* Fila superior: valoración + precio + visitas */}
                                     <div className="modal-detail-stats">
                                         <div className="modal-detail-stat">
-                                            <span className="label">Valoración</span>
+                                            <span className="label">Valoración media</span>
                                             <div className="rating-stars" style={{ marginTop: '4px' }}>
                                                 {Array.from({ length: 5 }).map((_, idx) => (
                                                     <Star
@@ -580,9 +574,19 @@ const VideoGameList = () => {
                                                     />
                                                 ))}
                                                 <span style={{ fontSize: '14px', color: 'var(--muted)', marginLeft: '6px', fontWeight: '700' }}>
-                                                    {detailGame.puntuacion || 0}/5
+                                                    {(detailGame.puntuacion || 0).toFixed(1)}/5
                                                 </span>
                                             </div>
+                                            {currentUser && (
+                                                <div style={{ marginTop: '10px' }}>
+                                                    <span className="label" style={{ display: 'block', marginBottom: '6px' }}>Tu valoración</span>
+                                                    <StarRating
+                                                        key={myRating}
+                                                        initialRating={myRating}
+                                                        onRate={handleRate}
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="modal-detail-stat">
                                             <span className="label">Precio</span>
@@ -599,7 +603,6 @@ const VideoGameList = () => {
                                         </div>
                                     </div>
 
-                                    {/* Descripción */}
                                     <div className="modal-detail-section">
                                         <p className="modal-detail-section-label">Descripción</p>
                                         <p className="modal-detail-desc">
@@ -607,7 +610,6 @@ const VideoGameList = () => {
                                         </p>
                                     </div>
 
-                                    {/* Acciones */}
                                     <div className="modal-detail-actions">
                                         <button
                                             className={`button ${favorites.includes(detailGame.id) ? 'button-outline' : 'button-ghost'}`}
@@ -668,7 +670,6 @@ const VideoGameList = () => {
                                         className="card card-clickable"
                                         onClick={() => openDetail(game)}
                                     >
-                                        {/* Portada premium */}
                                         <div className="card-banner">
                                             <img 
                                                 src={getGameCoverUrl(game.nombre, game.plataforma)} 
@@ -701,7 +702,6 @@ const VideoGameList = () => {
                                                 {game.caracteristicas || 'Sin descripción disponible.'}
                                             </p>
 
-                                            {/* Valoración dorada */}
                                             <div className="rating-stars">
                                                 {Array.from({ length: 5 }).map((_, idx) => (
                                                     <Star 
@@ -712,11 +712,10 @@ const VideoGameList = () => {
                                                     />
                                                 ))}
                                                 <span style={{ fontSize: '12px', color: 'var(--muted)', marginLeft: '6px', fontWeight: '700' }}>
-                                                    ({game.puntuacion || 0}/5)
+                                                    ({(game.puntuacion || 0).toFixed(1)}/5)
                                                 </span>
                                             </div>
 
-                                            {/* Sección inferior con precio e interacciones */}
                                             <div className="card-info">
                                                 <div className="price-box">
                                                     <span className="label">Precio</span>
@@ -727,7 +726,6 @@ const VideoGameList = () => {
                                                 </div>
                                             </div>
 
-                                            {/* Acciones de administración */}
                                             {userRole === 'admin' && (
                                                 <div className="card-actions" onClick={(e) => e.stopPropagation()}>
                                                     <button className="button button-outline" onClick={() => openEdit(game)}>
@@ -750,7 +748,6 @@ const VideoGameList = () => {
                     </div>
                 )}
 
-                {/* Estado vacío */}
                 {!loading && filteredAndSortedGames.length === 0 && (
                     <div className="empty-state">
                         <Gamepad2 size={48} style={{ color: 'var(--muted)', opacity: 0.6 }} />

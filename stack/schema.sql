@@ -33,6 +33,16 @@ CREATE TABLE IF NOT EXISTS users (
     INDEX idx_users_username (username)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS user_ratings (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNSIGNED NOT NULL,
+    game_id INT UNSIGNED NOT NULL,
+    rating TINYINT NOT NULL,
+    UNIQUE KEY unique_user_game (user_id, game_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (game_id) REFERENCES videogames(id) ON DELETE CASCADE
+);
+
 INSERT INTO videogames (nombre, precio, plataforma, caracteristicas, puntuacion, visitas) VALUES
     ('The Legend of Zelda: Breath of the Wild', 59.99, 'Nintendo Switch', 'Mundo abierto, aventura, exploracion', 9.2, 2000000),
     ('God of War Ragnarok', 69.99, 'PS5', 'Accion, historia, mitologia nordica', 8.8, 1800000),

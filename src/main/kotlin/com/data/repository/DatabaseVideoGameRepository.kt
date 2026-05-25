@@ -197,7 +197,7 @@ class DatabaseVideoGameRepository : VideoGameInterface {
         }
     }
 
-    override fun deleteVideoGame(id: Int): Boolean {
+       override fun deleteVideoGame(id: Int): Boolean {
         val sql = "DELETE FROM videogames WHERE id = ?"
         return try {
             getConnection().use { connection ->
@@ -209,6 +209,54 @@ class DatabaseVideoGameRepository : VideoGameInterface {
         } catch (e: SQLException) {
             logger.error("Error borrando videojuego", e)
             false
+        }
+    }
+
+    override fun rateGame(userId: Int, gameId: Int, rating: Int): com.domain.models.RateResponse? {
+        if (rating < 1 || rating > 5) return null
+        val upsert = """
+            INSERT INTO user_ratings (user_id, game_id, rating)
+            VALUES (?, ?, ?)
+            ON DUPLICATE KEY UPDATE rating = VALUES(rating)
+        """.trimIndent()
+        val avgSql = "SELECT AVG(rating) as avg, COUNT(*) as total FROM user_ratings WHERE game_id = ?"
+        val updateGame = "UPDATE videogames SET puntuacion = ? WHERE id = ?"
+        return try {
+            getConnection().use { conn ->
+                conn.prepareStatement(upsert).use { st ->
+                    st.setInt(1, userId); st.setInt(2, gameId); st.setInt(3, rating)
+                    st.executeUpdate()
+                }
+                var avg = 0f; var total = 0
+                conn.prepareStatement(avgSql).use { st ->
+                    st.setInt(1, gameId)
+                    st.executeQuery().use { rs ->
+                        if (rs.next()) { avg = rs.getFloat("avg"); total = rs.getInt("total") }
+                    }
+                }
+                conn.prepareStatement(updateGame).use { st ->
+                    st.setFloat(1, avg); st.setInt(2, gameId); st.executeUpdate()
+                }
+                com.domain.models.RateResponse(newAverage = avg, myRating = rating, totalVotes = total)
+            }
+        } catch (e: java.sql.SQLException) {
+            logger.error("Error al valorar juego $gameId por usuario $userId", e)
+            null
+        }
+    }
+
+    override fun getUserRating(userId: Int, gameId: Int): Int? {
+        val sql = "SELECT rating FROM user_ratings WHERE user_id = ? AND game_id = ?"
+        return try {
+            getConnection().use { conn ->
+                conn.prepareStatement(sql).use { st ->
+                    st.setInt(1, userId); st.setInt(2, gameId)
+                    st.executeQuery().use { rs -> if (rs.next()) rs.getInt("rating") else null }
+                }
+            }
+        } catch (e: java.sql.SQLException) {
+            logger.error("Error leyendo valoracion de usuario $userId para juego $gameId", e)
+            null
         }
     }
 }

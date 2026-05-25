@@ -49,3 +49,8 @@ data class RefreshTokenRequest(
 data class RefreshTokenResponse(
     val accessToken: String
 )
+@Serializable
+data class RateRequest(val rating: Int)
+
+@Serializable
+data class RateResponse(val newAverage: Float, val myRating: Int, val totalVotes: Int)

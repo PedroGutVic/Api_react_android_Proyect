@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import VideoGames from './pages/VideoGames';
 import Users from './pages/Users';
+import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -33,6 +34,14 @@ function App() {
                 <AdminRoute>
                   <Users />
                 </AdminRoute>
+              } 
+            />
+            <Route 
+              path="/perfil" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
               } 
             />
             <Route path="*" element={<NotFound />} />

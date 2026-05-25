@@ -81,5 +81,7 @@ object ProviderUseCase {
         deleteVideoGameUseCase.id = id
         return deleteVideoGameUseCase()
     }
+    fun rateGame(userId: Int, gameId: Int, rating: Int) = repository.rateGame(userId, gameId, rating)
+    fun getUserRating(userId: Int, gameId: Int) = repository.getUserRating(userId, gameId)
 
 }

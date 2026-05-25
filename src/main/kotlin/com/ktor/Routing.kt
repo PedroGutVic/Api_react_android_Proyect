@@ -226,23 +226,53 @@ fun Application.configureRouting() {
         }
 
 
-        // POST /api/videogame/{id}/visit — incrementa visitas (cualquier usuario autenticado)
-        authenticate("auth-jwt") {
-            post("/api/videogame/{videoGameId}/visit") {
-                val videoGameId = call.parameters["videoGameId"]
-                val id = videoGameId?.toIntOrNull()
-                if (id == null) {
-                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "El id debe ser un numero entero"))
-                    return@post
-                }
-                val ok = ProviderUseCase.incrementVisitas(id)
-                if (ok) {
-                    call.respond(HttpStatusCode.OK, mapOf("message" to "Visita registrada"))
-                } else {
-                    call.respond(HttpStatusCode.NotFound, mapOf("error" to "Videojuego no encontrado"))
-                }
-            }
+        // POST /api/videogame/{id}/rate — cualquier usuario autenticado
+authenticate("auth-jwt") {
+    post("/api/videogame/{videoGameId}/rate") {
+        val userId = call.userId
+        if (userId == null) {
+            call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Token invalido"))
+            return@post
         }
+        val id = call.parameters["videoGameId"]?.toIntOrNull()
+        if (id == null) {
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Id invalido"))
+            return@post
+        }
+        val body = try { call.receive<RateRequest>() } catch (e: Exception) {
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Formato invalido"))
+            return@post
+        }
+        if (body.rating < 1 || body.rating > 5) {
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Rating debe ser entre 1 y 5"))
+            return@post
+        }
+        val result = ProviderUseCase.rateGame(userId, id, body.rating)
+        if (result == null) {
+            call.respond(HttpStatusCode.NotFound, mapOf("error" to "Juego no encontrado"))
+        } else {
+            call.respond(HttpStatusCode.OK, result)
+        }
+    }
+}
+
+// GET /api/videogame/{id}/my-rating — devuelve la valoracion del usuario actual
+authenticate("auth-jwt") {
+    get("/api/videogame/{videoGameId}/my-rating") {
+        val userId = call.userId
+        if (userId == null) {
+            call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Token invalido"))
+            return@get
+        }
+        val id = call.parameters["videoGameId"]?.toIntOrNull()
+        if (id == null) {
+            call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Id invalido"))
+            return@get
+        }
+        val rating = ProviderUseCase.getUserRating(userId, id)
+        call.respond(HttpStatusCode.OK, mapOf("rating" to rating))
+    }
+}
 
         authenticate("auth-jwt") {
             post("/api/videogame") {

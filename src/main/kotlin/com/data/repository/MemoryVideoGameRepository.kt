@@ -75,4 +75,6 @@ class MemoryVideoGameRepository : VideoGameInterface {
             false
         }
     }
+    override fun rateGame(userId: Int, gameId: Int, rating: Int): com.domain.models.RateResponse? = null
+        override fun getUserRating(userId: Int, gameId: Int): Int? = null
 }
