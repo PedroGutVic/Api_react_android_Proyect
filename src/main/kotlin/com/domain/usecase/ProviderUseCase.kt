@@ -75,6 +75,8 @@ object ProviderUseCase {
         return getVideoGamesByPlataformaUseCase()
     }
 
+    fun incrementVisitas(id: Int): Boolean = repository.incrementVisitas(id)
+
     fun deleteVideoGame(id: Int): Boolean {
         deleteVideoGameUseCase.id = id
         return deleteVideoGameUseCase()

@@ -17,5 +17,7 @@ interface VideoGameInterface {
 
     fun updateVideoGame(videoGame: UpdateVideoGame, id: Int): Boolean
 
+    fun incrementVisitas(id: Int): Boolean
+
     fun deleteVideoGame(id: Int): Boolean
 }

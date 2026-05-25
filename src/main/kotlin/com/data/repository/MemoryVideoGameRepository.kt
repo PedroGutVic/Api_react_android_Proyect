@@ -55,6 +55,17 @@ class MemoryVideoGameRepository : VideoGameInterface {
         }
     }
 
+    override fun incrementVisitas(id: Int): Boolean {
+        val index = VideoGameData.listVideoGame.indexOfFirst { it.id == id }
+        return if (index != -1) {
+            val game = VideoGameData.listVideoGame[index]
+            VideoGameData.listVideoGame[index] = game.copy(visitas = game.visitas + 1)
+            true
+        } else {
+            false
+        }
+    }
+
     override fun deleteVideoGame(id: Int): Boolean {
         val index = VideoGameData.listVideoGame.indexOfFirst { it.id == id }
         return if (index != -1) {

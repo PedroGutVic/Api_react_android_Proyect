@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
-  ?? (import.meta.env.DEV ? '/api' : '');
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? '';
 
 const authClient = axios.create({
   baseURL: apiBaseUrl,

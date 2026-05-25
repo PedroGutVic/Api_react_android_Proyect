@@ -9,6 +9,7 @@ FROM gradle:8.7-jdk17 AS build
 WORKDIR /workspace
 COPY . .
 COPY --from=react-build /workspace/react/dist ./src/main/resources/static
+RUN sed -i 's/\r//' gradlew && chmod +x gradlew
 RUN ./gradlew installDist --no-daemon
 
 FROM eclipse-temurin:17-jre

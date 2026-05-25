@@ -182,6 +182,21 @@ class DatabaseVideoGameRepository : VideoGameInterface {
         }
     }
 
+    override fun incrementVisitas(id: Int): Boolean {
+        val sql = "UPDATE videogames SET visitas = visitas + 1 WHERE id = ?"
+        return try {
+            getConnection().use { connection ->
+                connection.prepareStatement(sql).use { statement ->
+                    statement.setInt(1, id)
+                    statement.executeUpdate() > 0
+                }
+            }
+        } catch (e: SQLException) {
+            logger.error("Error incrementando visitas del videojuego $id", e)
+            false
+        }
+    }
+
     override fun deleteVideoGame(id: Int): Boolean {
         val sql = "DELETE FROM videogames WHERE id = ?"
         return try {

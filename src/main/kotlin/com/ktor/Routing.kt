@@ -226,6 +226,24 @@ fun Application.configureRouting() {
         }
 
 
+        // POST /api/videogame/{id}/visit — incrementa visitas (cualquier usuario autenticado)
+        authenticate("auth-jwt") {
+            post("/api/videogame/{videoGameId}/visit") {
+                val videoGameId = call.parameters["videoGameId"]
+                val id = videoGameId?.toIntOrNull()
+                if (id == null) {
+                    call.respond(HttpStatusCode.BadRequest, mapOf("error" to "El id debe ser un numero entero"))
+                    return@post
+                }
+                val ok = ProviderUseCase.incrementVisitas(id)
+                if (ok) {
+                    call.respond(HttpStatusCode.OK, mapOf("message" to "Visita registrada"))
+                } else {
+                    call.respond(HttpStatusCode.NotFound, mapOf("error" to "Videojuego no encontrado"))
+                }
+            }
+        }
+
         authenticate("auth-jwt") {
             post("/api/videogame") {
                 val userRole = call.userRole

@@ -90,6 +90,7 @@ export const videoGameApi = {
   create: (videoGame) => client.post('/videogame', videoGame),
   update: (id, videoGame) => client.patch(`/videogame/${id}`, videoGame),
   delete: (id) => client.delete(`/videogame/${id}`),
+  incrementVisit: (id) => client.post(`/videogame/${id}/visit`),
 };
 
 export const userApi = {
