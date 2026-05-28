@@ -540,7 +540,7 @@ const VideoGameList = () => {
                             >
                                 <div className="modal-detail-banner">
                                     <img
-                                        src={getGameCoverUrl(detailGame.nombre, detailGame.plataforma)}
+                                        src={detailGame.imagenUrl || getGameCoverUrl(detailGame.nombre, detailGame.plataforma)}
                                         alt={detailGame.nombre}
                                     />
                                     <div className="modal-detail-banner-overlay">
@@ -671,9 +671,9 @@ const VideoGameList = () => {
                                         onClick={() => openDetail(game)}
                                     >
                                         <div className="card-banner">
-                                            <img 
-                                                src={getGameCoverUrl(game.nombre, game.plataforma)} 
-                                                alt={game.nombre} 
+                                            <img
+                                                src={game.imagenUrl || getGameCoverUrl(game.nombre, game.plataforma)}
+                                                alt={game.nombre}
                                                 loading="lazy"
                                             />
                                             <div className="card-banner-overlay">

@@ -36,12 +36,13 @@ class DatabaseVideoGameRepository : VideoGameInterface {
             plataforma = resultSet.getString("plataforma"),
             caracteristicas = resultSet.getString("caracteristicas"),
             puntuacion = resultSet.getFloat("puntuacion"),
-            visitas = resultSet.getLong("visitas")
+            visitas = resultSet.getLong("visitas"),
+            imagenUrl = resultSet.getString("imagen_url")
         )
     }
 
     override fun getAllVideoGames(): List<VideoGame> {
-        val sql = "SELECT id, nombre, precio, plataforma, caracteristicas, puntuacion, visitas FROM videogames"
+        val sql = "SELECT id, nombre, precio, plataforma, caracteristicas, puntuacion, visitas, imagen_url FROM videogames"
         return try {
             getConnection().use { connection ->
                 connection.prepareStatement(sql).use { statement ->
@@ -61,7 +62,7 @@ class DatabaseVideoGameRepository : VideoGameInterface {
     }
 
     override fun getVideoGamesByPlataforma(plataforma: String): List<VideoGame> {
-        val sql = "SELECT id, nombre, precio, plataforma, caracteristicas, puntuacion, visitas FROM videogames WHERE plataforma = ?"
+        val sql = "SELECT id, nombre, precio, plataforma, caracteristicas, puntuacion, visitas, imagen_url FROM videogames WHERE plataforma = ?"
         return try {
             getConnection().use { connection ->
                 connection.prepareStatement(sql).use { statement ->
@@ -82,7 +83,7 @@ class DatabaseVideoGameRepository : VideoGameInterface {
     }
 
     override fun getVideoGamesByNombre(nombre: String): List<VideoGame> {
-        val sql = "SELECT id, nombre, precio, plataforma, caracteristicas, puntuacion, visitas FROM videogames WHERE nombre = ?"
+        val sql = "SELECT id, nombre, precio, plataforma, caracteristicas, puntuacion, visitas, imagen_url FROM videogames WHERE nombre = ?"
         return try {
             getConnection().use { connection ->
                 connection.prepareStatement(sql).use { statement ->
@@ -103,7 +104,7 @@ class DatabaseVideoGameRepository : VideoGameInterface {
     }
 
     override fun getVideoGameById(id: Int): VideoGame? {
-        val sql = "SELECT id, nombre, precio, plataforma, caracteristicas, puntuacion, visitas FROM videogames WHERE id = ?"
+        val sql = "SELECT id, nombre, precio, plataforma, caracteristicas, puntuacion, visitas, imagen_url FROM videogames WHERE id = ?"
         return try {
             getConnection().use { connection ->
                 connection.prepareStatement(sql).use { statement ->
@@ -121,8 +122,8 @@ class DatabaseVideoGameRepository : VideoGameInterface {
 
     override fun postVideoGame(videoGame: VideoGame): Int? {
         val sql = """
-            INSERT INTO videogames (nombre, precio, plataforma, caracteristicas, puntuacion, visitas)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO videogames (nombre, precio, plataforma, caracteristicas, puntuacion, visitas, imagen_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """.trimIndent()
         return try {
             getConnection().use { connection ->
@@ -133,6 +134,7 @@ class DatabaseVideoGameRepository : VideoGameInterface {
                     statement.setString(4, videoGame.caracteristicas)
                     statement.setFloat(5, videoGame.puntuacion)
                     statement.setLong(6, videoGame.visitas)
+                    statement.setString(7, videoGame.imagenUrl)
                     val updated = statement.executeUpdate()
                     if (updated <= 0) {
                         return null
@@ -156,11 +158,12 @@ class DatabaseVideoGameRepository : VideoGameInterface {
             plataforma = videoGame.plataforma ?: existing.plataforma,
             caracteristicas = videoGame.caracteristicas ?: existing.caracteristicas,
             puntuacion = videoGame.puntuacion ?: existing.puntuacion,
-            visitas = videoGame.visitas ?: existing.visitas
+            visitas = videoGame.visitas ?: existing.visitas,
+            imagenUrl = videoGame.imagenUrl ?: existing.imagenUrl
         )
         val sql = """
             UPDATE videogames
-            SET nombre = ?, precio = ?, plataforma = ?, caracteristicas = ?, puntuacion = ?, visitas = ?
+            SET nombre = ?, precio = ?, plataforma = ?, caracteristicas = ?, puntuacion = ?, visitas = ?, imagen_url = ?
             WHERE id = ?
         """.trimIndent()
         return try {
@@ -172,7 +175,8 @@ class DatabaseVideoGameRepository : VideoGameInterface {
                     statement.setString(4, updated.caracteristicas)
                     statement.setFloat(5, updated.puntuacion)
                     statement.setLong(6, updated.visitas)
-                    statement.setInt(7, id)
+                    statement.setString(7, updated.imagenUrl)
+                    statement.setInt(8, id)
                     statement.executeUpdate() > 0
                 }
             }

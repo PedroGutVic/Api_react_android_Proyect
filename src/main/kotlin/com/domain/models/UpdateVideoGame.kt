@@ -12,5 +12,6 @@ data class UpdateVideoGame(
     val plataforma: String? = null,
     val caracteristicas: String? = null,
     val puntuacion: Float? = null,
-    val visitas: Long? = null
+    val visitas: Long? = null,
+    val imagenUrl: String? = null
 )
