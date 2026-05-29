@@ -155,19 +155,19 @@ INSERT INTO videogames (nombre, precio, plataforma, caracteristicas, puntuacion,
 -- MMO
 ('Final Fantasy XIV: Endwalker', 39.99, 'PC', 'MMORPG, conclusion de la historia de la hidra de luz, comunidad increible', 9.5, 2800000, 'https://cdn.cloudflare.steamstatic.com/steam/apps/39210/header.jpg'),
 ('Lost Ark', 0.00, 'PC', 'MMORPG ARPG free-to-play, combate dinamico, raids de alto nivel', 7.8, 3200000, 'https://cdn.cloudflare.steamstatic.com/steam/apps/1599340/header.jpg'),
--- Nintendo Switch exclusivos (sin imagen en Steam, fallback en frontend)
-('The Legend of Zelda: Tears of the Kingdom', 69.99, 'Nintendo Switch', 'Mundo abierto, construccion libre con Ultrahand, volar por el cielo de Hyrule, superacion de BOTW', 9.8, 4200000, NULL),
-('The Legend of Zelda: Breath of the Wild', 59.99, 'Nintendo Switch', 'Revolucion del mundo abierto, fisica emergente, Hyrule enorme y vivo, libertad total', 9.7, 5500000, NULL),
-('Super Mario Odyssey', 59.99, 'Nintendo Switch', 'Plataformas 3D, capturar enemigos con Cappy, mundos creativos, Nintendo en su mejor momento', 9.5, 3800000, NULL),
-('Super Mario Bros. Wonder', 59.99, 'Nintendo Switch', 'Plataformas 2D fresco e imaginativo, flores wonder que transforman niveles completamente', 9.4, 2100000, NULL),
-('Mario Kart 8 Deluxe', 59.99, 'Nintendo Switch', 'El mejor juego de karts, 96 pistas, multijugador hasta 12 en linea, imprescindible en Switch', 9.2, 6000000, NULL),
-('Metroid Dread', 59.99, 'Nintendo Switch', 'Metroidvania 2D, Samus vs los E.M.M.I., el mejor Metroid en decadas', 8.9, 1600000, NULL),
-('Splatoon 3', 59.99, 'Nintendo Switch', 'Shooter de pintura multijugador, fresco y original, modos competitivos y cooperativos', 8.6, 2300000, NULL),
-('Pokemon Scarlet', 59.99, 'Nintendo Switch', 'RPG de Pokemon en mundo abierto por primera vez, region Paldea, tres historias principales', 7.8, 3500000, NULL),
-('Animal Crossing: New Horizons', 59.99, 'Nintendo Switch', 'Simulacion de vida en isla, relajante, personalizable al infinito, fenomeno durante pandemia', 8.7, 4800000, NULL),
-('Xenoblade Chronicles 3', 59.99, 'Nintendo Switch', 'JRPG de mundo abierto, historia epica, sistema de combate complejo, mas de 80 horas', 9.0, 1200000, NULL),
-('Kirby and the Forgotten Land', 59.99, 'Nintendo Switch', 'Plataformas 3D de Kirby, cooperativo, niveles creativos, el mejor Kirby hasta la fecha', 8.8, 1800000, NULL),
-('Fire Emblem Engage', 59.99, 'Nintendo Switch', 'Estrategia por turnos, emblemas de heroes clasicos, combate tactico profundo', 8.4, 1100000, NULL),
+-- Nintendo Switch exclusivos
+('The Legend of Zelda: Tears of the Kingdom', 69.99, 'Nintendo Switch', 'Mundo abierto, construccion libre con Ultrahand, volar por el cielo de Hyrule, superacion de BOTW', 9.8, 4200000, 'https://upload.wikimedia.org/wikipedia/en/4/4e/The_Legend_of_Zelda-_Tears_of_the_Kingdom_cover.jpg'),
+('The Legend of Zelda: Breath of the Wild', 59.99, 'Nintendo Switch', 'Revolucion del mundo abierto, fisica emergente, Hyrule enorme y vivo, libertad total', 9.7, 5500000, 'https://upload.wikimedia.org/wikipedia/en/c/c6/The_Legend_of_Zelda_Breath_of_the_Wild.jpg'),
+('Super Mario Odyssey', 59.99, 'Nintendo Switch', 'Plataformas 3D, capturar enemigos con Cappy, mundos creativos, Nintendo en su mejor momento', 9.5, 3800000, 'https://upload.wikimedia.org/wikipedia/en/8/8b/Super_Mario_Odyssey.jpg'),
+('Super Mario Bros. Wonder', 59.99, 'Nintendo Switch', 'Plataformas 2D fresco e imaginativo, flores wonder que transforman niveles completamente', 9.4, 2100000, 'https://upload.wikimedia.org/wikipedia/en/1/17/Super_Mario_Bros._Wonder_cover_artwork.jpg'),
+('Mario Kart 8 Deluxe', 59.99, 'Nintendo Switch', 'El mejor juego de karts, 96 pistas, multijugador hasta 12 en linea, imprescindible en Switch', 9.2, 6000000, 'https://upload.wikimedia.org/wikipedia/en/7/72/MarioKart8Deluxe.jpg'),
+('Metroid Dread', 59.99, 'Nintendo Switch', 'Metroidvania 2D, Samus vs los E.M.M.I., el mejor Metroid en decadas', 8.9, 1600000, 'https://upload.wikimedia.org/wikipedia/en/0/03/Metroid_Dread_cover.jpg'),
+('Splatoon 3', 59.99, 'Nintendo Switch', 'Shooter de pintura multijugador, fresco y original, modos competitivos y cooperativos', 8.6, 2300000, 'https://upload.wikimedia.org/wikipedia/en/d/da/Splatoon_3_cover_art.jpg'),
+('Pokemon Scarlet', 59.99, 'Nintendo Switch', 'RPG de Pokemon en mundo abierto por primera vez, region Paldea, tres historias principales', 7.8, 3500000, 'https://upload.wikimedia.org/wikipedia/en/1/18/Pokemon_Scarlet_cover.jpg'),
+('Animal Crossing: New Horizons', 59.99, 'Nintendo Switch', 'Simulacion de vida en isla, relajante, personalizable al infinito, fenomeno durante pandemia', 8.7, 4800000, 'https://upload.wikimedia.org/wikipedia/en/8/8f/Animal_Crossing_New_Horizons.jpg'),
+('Xenoblade Chronicles 3', 59.99, 'Nintendo Switch', 'JRPG de mundo abierto, historia epica, sistema de combate complejo, mas de 80 horas', 9.0, 1200000, 'https://upload.wikimedia.org/wikipedia/en/f/f0/Xenoblade_Chronicles_3.jpg'),
+('Kirby and the Forgotten Land', 59.99, 'Nintendo Switch', 'Plataformas 3D de Kirby, cooperativo, niveles creativos, el mejor Kirby hasta la fecha', 8.8, 1800000, 'https://upload.wikimedia.org/wikipedia/en/3/34/Kirby_and_the_Forgotten_Land.jpg'),
+('Fire Emblem Engage', 59.99, 'Nintendo Switch', 'Estrategia por turnos, emblemas de heroes clasicos, combate tactico profundo', 8.4, 1100000, 'https://upload.wikimedia.org/wikipedia/en/e/e7/Fire_Emblem_Engage.jpg'),
 -- Deckbuilder
 ('Monster Train', 24.99, 'PC', 'Roguelike deckbuilder, defender un tren del infierno, dos pisos de combate, multijugador online', 8.8, 1300000, 'https://cdn.cloudflare.steamstatic.com/steam/apps/1102190/header.jpg');
 

@@ -21,49 +21,24 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const getGameCoverUrl = (nombre = '', plataforma = '') => {
-    const name = nombre.toLowerCase();
-    
-    if (name.includes('zelda') || name.includes('breath of the wild') || name.includes('link')) {
-        return 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop';
-    }
-    if (name.includes('ragnarok') || name.includes('god of war') || name.includes('kratos')) {
-        return 'https://images.unsplash.com/photo-1608889175123-8ec330b86f84?q=80&w=600&auto=format&fit=crop';
-    }
-    if (name.includes('elden ring') || name.includes('souls') || name.includes('bloodborne')) {
-        return 'https://images.unsplash.com/photo-1655821888788-6107699e173b?q=80&w=600&auto=format&fit=crop';
-    }
-    if (name.includes('halo') || name.includes('master chief')) {
-        return 'https://images.unsplash.com/photo-1612287230202-1bf1d85d1bdf?q=80&w=600&auto=format&fit=crop';
-    }
-    if (name.includes('hades')) {
-        return 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=600&auto=format&fit=crop';
-    }
-    if (name.includes('celeste') || name.includes('mountain')) {
-        return 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=600&auto=format&fit=crop';
-    }
-    if (name.includes('mario') || name.includes('kart') || name.includes('odyssey') || name.includes('nintendo')) {
-        return 'https://images.unsplash.com/photo-1605901309584-818e25960a8f?q=80&w=600&auto=format&fit=crop';
-    }
-    if (name.includes('cyberpunk') || name.includes('witcher')) {
-        return 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600&auto=format&fit=crop';
-    }
-    if (name.includes('minecraft')) {
-        return 'https://images.unsplash.com/photo-1607988795691-3d0147b43231?q=80&w=600&auto=format&fit=crop';
-    }
-    
-    const plat = plataforma.toLowerCase();
-    if (plat.includes('switch') || plat.includes('nintendo')) {
-        return 'https://images.unsplash.com/photo-1585412727339-54e4bae3bbf9?q=80&w=600&auto=format&fit=crop';
-    }
-    if (plat.includes('ps') || plat.includes('playstation') || plat.includes('ps5')) {
-        return 'https://images.unsplash.com/photo-1606813907291-d86efa9b94db?q=80&w=600&auto=format&fit=crop';
-    }
-    if (plat.includes('xbox')) {
-        return 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600&auto=format&fit=crop';
-    }
-    
-    return 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=600&auto=format&fit=crop';
+const NINTENDO_COVERS = {
+    'the legend of zelda: tears of the kingdom': 'https://upload.wikimedia.org/wikipedia/en/4/4e/The_Legend_of_Zelda-_Tears_of_the_Kingdom_cover.jpg',
+    'the legend of zelda: breath of the wild': 'https://upload.wikimedia.org/wikipedia/en/c/c6/The_Legend_of_Zelda_Breath_of_the_Wild.jpg',
+    'super mario odyssey': 'https://upload.wikimedia.org/wikipedia/en/8/8b/Super_Mario_Odyssey.jpg',
+    'super mario bros. wonder': 'https://upload.wikimedia.org/wikipedia/en/1/17/Super_Mario_Bros._Wonder_cover_artwork.jpg',
+    'mario kart 8 deluxe': 'https://upload.wikimedia.org/wikipedia/en/7/72/MarioKart8Deluxe.jpg',
+    'metroid dread': 'https://upload.wikimedia.org/wikipedia/en/0/03/Metroid_Dread_cover.jpg',
+    'splatoon 3': 'https://upload.wikimedia.org/wikipedia/en/d/da/Splatoon_3_cover_art.jpg',
+    'pokemon scarlet': 'https://upload.wikimedia.org/wikipedia/en/1/18/Pokemon_Scarlet_cover.jpg',
+    'animal crossing: new horizons': 'https://upload.wikimedia.org/wikipedia/en/8/8f/Animal_Crossing_New_Horizons.jpg',
+    'xenoblade chronicles 3': 'https://upload.wikimedia.org/wikipedia/en/f/f0/Xenoblade_Chronicles_3.jpg',
+    'kirby and the forgotten land': 'https://upload.wikimedia.org/wikipedia/en/3/34/Kirby_and_the_Forgotten_Land.jpg',
+    'fire emblem engage': 'https://upload.wikimedia.org/wikipedia/en/e/e7/Fire_Emblem_Engage.jpg',
+};
+
+const getGameCoverUrl = (nombre = '') => {
+    return NINTENDO_COVERS[nombre.toLowerCase()]
+        ?? 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=600&auto=format&fit=crop';
 };
 
 const emptyGame = {
@@ -540,7 +515,7 @@ const VideoGameList = () => {
                             >
                                 <div className="modal-detail-banner">
                                     <img
-                                        src={detailGame.imagenUrl || getGameCoverUrl(detailGame.nombre, detailGame.plataforma)}
+                                        src={detailGame.imagenUrl || getGameCoverUrl(detailGame.nombre)}
                                         alt={detailGame.nombre}
                                     />
                                     <div className="modal-detail-banner-overlay">
@@ -672,7 +647,7 @@ const VideoGameList = () => {
                                     >
                                         <div className="card-banner">
                                             <img
-                                                src={game.imagenUrl || getGameCoverUrl(game.nombre, game.plataforma)}
+                                                src={game.imagenUrl || getGameCoverUrl(game.nombre)}
                                                 alt={game.nombre}
                                                 loading="lazy"
                                             />
