@@ -1,5 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { userApi } from '../api/client';
+import { useToast } from './Toast';
+import { useConfirm } from './ConfirmDialog';
+import useDebounce from '../hooks/useDebounce';
+import useEscapeKey from '../hooks/useEscapeKey';
+import { SkeletonUserCard } from './Skeleton';
 import {
     UserPlus,
     Users,
@@ -12,6 +17,7 @@ import {
     Shield,
     UserCheck,
     Sparkles,
+    Filter,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -31,6 +37,16 @@ const UserManagement = () => {
     const [newUser, setNewUser] = useState(emptyUser);
     const [editingUserId, setEditingUserId] = useState(null);
     const [editUser, setEditUser] = useState(emptyUser);
+
+    const showToast = useToast();
+    const confirm = useConfirm();
+    const debouncedSearch = useDebounce(search, 200);
+
+    const handleEscape = useCallback(() => {
+        if (editingUserId != null) { cancelEditing(); return; }
+        if (isAdding) { setIsAdding(false); }
+    }, [editingUserId, isAdding]);
+    useEscapeKey(handleEscape);
 
     useEffect(() => {
         fetchUsers();
@@ -66,8 +82,9 @@ const UserManagement = () => {
             setNewUser(emptyUser);
             setIsAdding(false);
             fetchUsers();
+            showToast('Usuario registrado correctamente.', 'success');
         } catch (err) {
-            alert('No se pudo crear el usuario.');
+            showToast('No se pudo crear el usuario.', 'error');
         }
     };
 
@@ -112,29 +129,32 @@ const UserManagement = () => {
             await userApi.update(editingUserId, payload);
             cancelEditing();
             fetchUsers();
+            showToast('Usuario actualizado correctamente.', 'success');
         } catch (err) {
-            alert('No se pudo actualizar el usuario.');
+            showToast('No se pudo actualizar el usuario.', 'error');
         }
     };
 
     const handleDelete = async (id) => {
-        if (!confirm('¿Estás seguro de que deseas desactivar/eliminar a este usuario?')) return;
+        const ok = await confirm('¿Estás seguro de que deseas eliminar a este usuario? Esta acción no se puede deshacer.');
+        if (!ok) return;
         try {
             await userApi.delete(id);
             setUsers((prev) => prev.filter((user) => user.id !== id));
+            showToast('Usuario eliminado del directorio.', 'success');
         } catch (err) {
-            alert('No se pudo eliminar el usuario.');
+            showToast('No se pudo eliminar el usuario.', 'error');
         }
     };
 
     const filteredUsers = useMemo(() => {
         if (!Array.isArray(users)) return [];
-        const term = search.toLowerCase();
+        const term = debouncedSearch.toLowerCase();
         return users.filter((user) =>
-            (user?.username || '').toLowerCase().includes(term) || 
+            (user?.username || '').toLowerCase().includes(term) ||
             (user?.email || '').toLowerCase().includes(term)
         );
-    }, [users, search]);
+    }, [users, debouncedSearch]);
 
     return (
         <section id="usuarios" className="section">
@@ -323,10 +343,29 @@ const UserManagement = () => {
                 </AnimatePresence>
 
                 {/* Directorio de tarjetas de usuario */}
+                {/* Contador de resultados */}
+                {!loading && (
+                    <div className="results-bar">
+                        <span className="results-count">
+                            {filteredUsers.length === users.length
+                                ? `${users.length} miembros registrados`
+                                : `${filteredUsers.length} de ${users.length} miembros`}
+                        </span>
+                        {debouncedSearch && (
+                            <button
+                                className="button button-ghost"
+                                style={{ fontSize: 12, padding: '4px 12px' }}
+                                onClick={() => setSearch('')}
+                            >
+                                <X size={12} /> Limpiar búsqueda
+                            </button>
+                        )}
+                    </div>
+                )}
+
                 {loading && users.length === 0 ? (
-                    <div className="empty-state" style={{ height: '350px' }}>
-                        <div className="loader" />
-                        <p style={{ fontWeight: '600' }}>Cargando directorio de usuarios...</p>
+                    <div className="card-grid">
+                        {Array.from({ length: 6 }).map((_, i) => <SkeletonUserCard key={i} />)}
                     </div>
                 ) : (
                     <div className="card-grid">

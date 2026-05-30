@@ -11,5 +11,7 @@ data class VideoGame(
     val caracteristicas: String,
     val puntuacion: Float = 0f,
     val visitas: Long = 0L,
-    val imagenUrl: String? = null
+    val imagenUrl: String? = null,
+    val anioLanzamiento: Int? = null,
+    val genero: String? = null
 )

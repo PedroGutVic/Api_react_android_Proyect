@@ -9,9 +9,13 @@ import VideoGames from './pages/VideoGames';
 import Users from './pages/Users';
 import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
+import { ToastProvider } from './components/Toast';
+import { ConfirmProvider } from './components/ConfirmDialog';
 
 function App() {
   return (
+    <ToastProvider>
+    <ConfirmProvider>
     <Router>
       <div className="page">
         <Navbar />
@@ -65,6 +69,8 @@ function App() {
         </footer>
       </div>
     </Router>
+    </ConfirmProvider>
+    </ToastProvider>
   );
 }
 

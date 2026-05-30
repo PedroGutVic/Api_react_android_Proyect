@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS videogames (
     puntuacion FLOAT(25) NOT NULL,
     visitas BIGINT(255) NOT NULL,
     imagen_url VARCHAR(500) NULL,
+    anio_lanzamiento SMALLINT UNSIGNED NULL,
+    genero VARCHAR(100) NULL,
     PRIMARY KEY (id),
     INDEX idx_videogames_plataforma (plataforma),
     INDEX idx_videogames_nombre (nombre)

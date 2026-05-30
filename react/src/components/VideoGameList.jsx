@@ -1,8 +1,13 @@
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { videoGameApi } from '../api/client';
 import { authService } from '../api/auth';
 import StarRating from './stars';
+import { useToast } from './Toast';
+import { useConfirm } from './ConfirmDialog';
+import useDebounce from '../hooks/useDebounce';
+import useEscapeKey from '../hooks/useEscapeKey';
+import { SkeletonCard, SkeletonRow } from './Skeleton';
 import {
     Gamepad2,
     Plus,
@@ -18,6 +23,8 @@ import {
     DollarSign,
     Award,
     Sparkles,
+    LayoutGrid,
+    List,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -26,12 +33,17 @@ const getGameCoverUrl = (imagenUrl = '') => {
     return imagenUrl || 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=600&auto=format&fit=crop';
 };
 
+const GENEROS = ['RPG', 'Acción', 'Aventura', 'Plataformas', 'FPS', 'Estrategia', 'Simulación', 'Deportes', 'Lucha', 'Terror', 'Puzzle', 'Roguelike', 'MMORPG', 'Indie', 'Multijugador'];
+
 const emptyGame = {
     nombre: '',
     precio: '',
     plataforma: '',
     caracteristicas: '',
     puntuacion: 0,
+    imagen_url: '',
+    anio_lanzamiento: '',
+    genero: '',
 };
 
 const VideoGameList = () => {
@@ -52,6 +64,21 @@ const VideoGameList = () => {
     const [sortBy, setSortBy] = useState('default');
     const [favorites, setFavorites] = useState([]);
     const [showFavsOnly, setShowFavsOnly] = useState(false);
+    const [viewMode, setViewMode] = useState('grid');
+    const [page, setPage] = useState(0);
+    const PAGE_SIZE = 20;
+
+    const showToast = useToast();
+    const confirm = useConfirm();
+    const debouncedSearch = useDebounce(search, 200);
+
+    const handleEscape = useCallback(() => {
+        if (detailGame) { setDetailGame(null); return; }
+        if (formOpen)   { closeForm(); }
+    }, [detailGame, formOpen]);
+    useEscapeKey(handleEscape);
+
+    useEffect(() => { setPage(0); }, [debouncedSearch, platformFilter, sortBy, showFavsOnly]);
 
     useEffect(() => {
         fetchGames();
@@ -102,6 +129,9 @@ const VideoGameList = () => {
             plataforma: game.plataforma || '',
             caracteristicas: game.caracteristicas || '',
             puntuacion: game.puntuacion ?? 0,
+            imagen_url: game.imagenUrl || game.imagen_url || '',
+            anio_lanzamiento: game.anioLanzamiento || game.anio_lanzamiento || '',
+            genero: game.genero || '',
         });
         setFormOpen(true);
     };
@@ -115,12 +145,14 @@ const VideoGameList = () => {
 
     const handleDelete = async (id) => {
         if (userRole !== 'admin') return;
-        if (!confirm('¿Estás seguro de que deseas eliminar este videojuego del catálogo?')) return;
+        const ok = await confirm('¿Estás seguro de que deseas eliminar este videojuego del catálogo?');
+        if (!ok) return;
         try {
             await videoGameApi.delete(id);
             setGames((prev) => prev.filter((game) => game.id !== id));
+            showToast('Videojuego eliminado del catálogo.', 'success');
         } catch (err) {
-            alert('No se pudo eliminar el videojuego.');
+            showToast('No se pudo eliminar el videojuego.', 'error');
         }
     };
 
@@ -130,18 +162,23 @@ const VideoGameList = () => {
             ...formState,
             precio: Number.parseFloat(formState.precio),
             puntuacion: Number.parseInt(formState.puntuacion, 10) || 0,
+            imagen_url: formState.imagen_url?.trim() || null,
+            anio_lanzamiento: formState.anio_lanzamiento ? Number.parseInt(formState.anio_lanzamiento, 10) : null,
+            genero: formState.genero?.trim() || null,
         };
 
         try {
             if (formMode === 'add') {
                 await videoGameApi.create({ ...payload, id: 0 });
+                showToast('Videojuego añadido al catálogo.', 'success');
             } else if (activeId != null) {
                 await videoGameApi.update(activeId, payload);
+                showToast('Videojuego actualizado correctamente.', 'success');
             }
             closeForm();
             fetchGames();
         } catch (err) {
-            alert('No se pudo guardar el videojuego.');
+            showToast('No se pudo guardar el videojuego.', 'error');
         }
     };
 
@@ -204,7 +241,7 @@ const VideoGameList = () => {
         if (!Array.isArray(games)) return [];
         let result = [...games];
 
-        const term = search.toLowerCase();
+        const term = debouncedSearch.toLowerCase();
         if (term) {
             result = result.filter(
                 (game) =>
@@ -242,7 +279,10 @@ const VideoGameList = () => {
         }
 
         return result;
-    }, [games, search, platformFilter, sortBy, favorites, showFavsOnly]);
+    }, [games, debouncedSearch, platformFilter, sortBy, favorites, showFavsOnly]);
+
+    const totalPages = Math.ceil(filteredAndSortedGames.length / PAGE_SIZE);
+    const pagedGames = filteredAndSortedGames.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
     return (
         <section id="juegos" className="section">
@@ -320,7 +360,7 @@ const VideoGameList = () => {
                     </div>
                     
                     <div className="sort-box">
-                        <button 
+                        <button
                             className={`platform-filter-btn ${showFavsOnly ? 'active' : ''}`}
                             onClick={() => setShowFavsOnly(!showFavsOnly)}
                             style={{ border: showFavsOnly ? '1px solid #ef4444' : '1px solid var(--line)', background: showFavsOnly ? 'rgba(239, 68, 68, 0.08)' : 'var(--surface)', color: showFavsOnly ? '#ef4444' : 'var(--ink)' }}
@@ -340,6 +380,23 @@ const VideoGameList = () => {
                             <option value="visits-desc">Más Populares (Visitas)</option>
                             <option value="name-asc">Nombre (A-Z)</option>
                         </select>
+
+                        <div className="view-toggle">
+                            <button
+                                className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                                onClick={() => setViewMode('grid')}
+                                title="Vista cuadrícula"
+                            >
+                                <LayoutGrid size={16} />
+                            </button>
+                            <button
+                                className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+                                onClick={() => setViewMode('list')}
+                                title="Vista lista"
+                            >
+                                <List size={16} />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -430,6 +487,19 @@ const VideoGameList = () => {
                                                 />
                                             </label>
                                             <label className="form-field">
+                                                <span>Año de lanzamiento</span>
+                                                <input
+                                                    type="number"
+                                                    min="1970"
+                                                    max={new Date().getFullYear() + 2}
+                                                    value={formState.anio_lanzamiento}
+                                                    onChange={(event) =>
+                                                        setFormState((prev) => ({ ...prev, anio_lanzamiento: event.target.value }))
+                                                    }
+                                                    placeholder="2024"
+                                                />
+                                            </label>
+                                            <label className="form-field">
                                                 <span>Plataforma</span>
                                                 <select
                                                     required
@@ -446,6 +516,18 @@ const VideoGameList = () => {
                                                     <option value="Multiplataforma">Multiplataforma</option>
                                                 </select>
                                             </label>
+                                            <label className="form-field">
+                                                <span>Género</span>
+                                                <select
+                                                    value={formState.genero}
+                                                    onChange={(event) =>
+                                                        setFormState((prev) => ({ ...prev, genero: event.target.value }))
+                                                    }
+                                                >
+                                                    <option value="">Sin género</option>
+                                                    {GENEROS.map(g => <option key={g} value={g}>{g}</option>)}
+                                                </select>
+                                            </label>
                                         </div>
                                         <label className="form-field">
                                             <span>Descripción breve</span>
@@ -458,7 +540,31 @@ const VideoGameList = () => {
                                                 placeholder="Resumen del juego, mecánicas, etc..."
                                             />
                                         </label>
-                                        
+
+                                        <div className="form-cover-row">
+                                            <label className="form-field" style={{ flex: 1 }}>
+                                                <span>URL de portada</span>
+                                                <input
+                                                    type="url"
+                                                    value={formState.imagen_url}
+                                                    onChange={(event) =>
+                                                        setFormState((prev) => ({ ...prev, imagen_url: event.target.value }))
+                                                    }
+                                                    placeholder="https://..."
+                                                />
+                                            </label>
+                                            {formState.imagen_url && (
+                                                <div className="form-cover-preview">
+                                                    <img
+                                                        src={formState.imagen_url}
+                                                        alt="preview"
+                                                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                        onLoad={(e) => { e.currentTarget.style.display = 'block'; }}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+
                                         <div className="rating-box" style={{ background: 'var(--surface-alt)' }}>
                                             <div className="rating-title">
                                                 <Star size={16} fill="var(--muted)" />
@@ -506,12 +612,17 @@ const VideoGameList = () => {
                                     />
                                     <div className="modal-detail-banner-overlay">
                                         <h2 className="modal-detail-title">{detailGame.nombre}</h2>
-                                        <span
-                                            className="brand-badge"
-                                            data-platform={detailGame.plataforma?.toLowerCase()}
-                                        >
-                                            {detailGame.plataforma || 'N/A'}
-                                        </span>
+                                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                                            <span
+                                                className="brand-badge"
+                                                data-platform={detailGame.plataforma?.toLowerCase()}
+                                            >
+                                                {detailGame.plataforma || 'N/A'}
+                                            </span>
+                                            {detailGame.genero && (
+                                                <span className="genre-badge">{detailGame.genero}</span>
+                                            )}
+                                        </div>
                                     </div>
                                     <button
                                         className="modal-detail-close theme-toggle"
@@ -562,6 +673,14 @@ const VideoGameList = () => {
                                                 {detailGame.visitas ?? 0}
                                             </span>
                                         </div>
+                                        {(detailGame.anioLanzamiento || detailGame.anio_lanzamiento) && (
+                                            <div className="modal-detail-stat">
+                                                <span className="label">Año</span>
+                                                <span style={{ fontWeight: '700', fontSize: '22px', color: 'var(--ink)' }}>
+                                                    {detailGame.anioLanzamiento || detailGame.anio_lanzamiento}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="modal-detail-section">
@@ -609,16 +728,45 @@ const VideoGameList = () => {
                     )}
                 </AnimatePresence>
 
-                {/* Grid del Catálogo */}
-                {loading && games.length === 0 ? (
-                    <div className="empty-state" style={{ height: '350px' }}>
-                        <div className="loader" />
-                        <p style={{ fontWeight: '600' }}>Cargando catálogo premium...</p>
+                {/* Contador de resultados */}
+                {!loading && (
+                    <div className="results-bar">
+                        <span className="results-count">
+                            {filteredAndSortedGames.length === games.length
+                                ? `${games.length} juegos en el catálogo`
+                                : `${filteredAndSortedGames.length} de ${games.length} juegos`}
+                        </span>
+                        {(debouncedSearch || platformFilter !== 'all' || showFavsOnly) && (
+                            <button
+                                className="button button-ghost"
+                                style={{ fontSize: 12, padding: '4px 12px' }}
+                                onClick={() => {
+                                    setSearch('');
+                                    setPlatformFilter('all');
+                                    setShowFavsOnly(false);
+                                }}
+                            >
+                                <X size={12} /> Limpiar filtros
+                            </button>
+                        )}
                     </div>
-                ) : (
+                )}
+
+                {/* Grid / Lista del Catálogo */}
+                {loading && games.length === 0 ? (
+                    viewMode === 'grid' ? (
+                        <div className="card-grid">
+                            {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+                        </div>
+                    ) : (
+                        <div className="list-view">
+                            {Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} />)}
+                        </div>
+                    )
+                ) : viewMode === 'grid' ? (
                     <div className="card-grid">
                         <AnimatePresence mode="popLayout">
-                            {filteredAndSortedGames.map((game) => {
+                            {pagedGames.map((game) => {
                                 const isFav = favorites.includes(game.id);
                                 return (
                                     <motion.article
@@ -645,12 +793,22 @@ const VideoGameList = () => {
 
                                         <div className="card-body">
                                             <div className="card-header">
-                                                <span 
-                                                    className="brand-badge"
-                                                    data-platform={game.plataforma?.toLowerCase()}
-                                                >
-                                                    {game.plataforma || 'N/A'}
-                                                </span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                                    <span
+                                                        className="brand-badge"
+                                                        data-platform={game.plataforma?.toLowerCase()}
+                                                    >
+                                                        {game.plataforma || 'N/A'}
+                                                    </span>
+                                                    {(game.anioLanzamiento || game.anio_lanzamiento) && (
+                                                        <span className="year-badge">
+                                                            {game.anioLanzamiento || game.anio_lanzamiento}
+                                                        </span>
+                                                    )}
+                                                    {game.genero && (
+                                                        <span className="genre-badge">{game.genero}</span>
+                                                    )}
+                                                </div>
                                                 <button
                                                     className={`favorite-btn ${isFav ? 'active' : ''}`}
                                                     onClick={(e) => { e.stopPropagation(); toggleFavorite(game.id); }}
@@ -666,10 +824,10 @@ const VideoGameList = () => {
 
                                             <div className="rating-stars">
                                                 {Array.from({ length: 5 }).map((_, idx) => (
-                                                    <Star 
-                                                        key={idx} 
-                                                        size={14} 
-                                                        fill={idx < Math.round(game.puntuacion || 0) ? "#fbbf24" : "none"} 
+                                                    <Star
+                                                        key={idx}
+                                                        size={14}
+                                                        fill={idx < Math.round(game.puntuacion || 0) ? "#fbbf24" : "none"}
                                                         stroke="#fbbf24"
                                                     />
                                                 ))}
@@ -708,16 +866,158 @@ const VideoGameList = () => {
                             })}
                         </AnimatePresence>
                     </div>
+                ) : (
+                    <div className="list-view">
+                        <AnimatePresence mode="popLayout">
+                            {pagedGames.map((game) => {
+                                const isFav = favorites.includes(game.id);
+                                return (
+                                    <motion.article
+                                        layout
+                                        key={game.id}
+                                        initial={{ opacity: 0, x: -12 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -12 }}
+                                        transition={{ duration: 0.22 }}
+                                        className="list-row"
+                                        onClick={() => openDetail(game)}
+                                    >
+                                        <img
+                                            className="list-row-thumb"
+                                            src={getGameCoverUrl(game.imagenUrl)}
+                                            alt={game.nombre}
+                                            loading="lazy"
+                                            onError={(e) => { e.currentTarget.src = getGameCoverUrl(); }}
+                                        />
+                                        <div className="list-row-main">
+                                            <span className="list-row-name">{game.nombre}</span>
+                                            <span
+                                                className="brand-badge"
+                                                data-platform={game.plataforma?.toLowerCase()}
+                                                style={{ alignSelf: 'flex-start' }}
+                                            >
+                                                {game.plataforma || 'N/A'}
+                                            </span>
+                                        </div>
+                                        <div className="list-row-rating">
+                                            {Array.from({ length: 5 }).map((_, idx) => (
+                                                <Star
+                                                    key={idx}
+                                                    size={13}
+                                                    fill={idx < Math.round(game.puntuacion || 0) ? "#fbbf24" : "none"}
+                                                    stroke="#fbbf24"
+                                                />
+                                            ))}
+                                            <span style={{ fontSize: '12px', color: 'var(--muted)', marginLeft: '4px', fontWeight: 700 }}>
+                                                {(game.puntuacion || 0).toFixed(1)}
+                                            </span>
+                                        </div>
+                                        <div className="list-row-visits">
+                                            <Eye size={14} /> {game.visitas ?? 0}
+                                        </div>
+                                        <span className="list-row-price">{(Number(game.precio) || 0).toFixed(2)} €</span>
+                                        <div className="list-row-actions" onClick={(e) => e.stopPropagation()}>
+                                            <button
+                                                className={`favorite-btn ${isFav ? 'active' : ''}`}
+                                                onClick={() => toggleFavorite(game.id)}
+                                                title={isFav ? "Quitar de favoritos" : "Añadir a favoritos"}
+                                            >
+                                                <Heart size={17} fill={isFav ? "#ef4444" : "none"} />
+                                            </button>
+                                            {userRole === 'admin' && (
+                                                <>
+                                                    <button className="button button-outline" style={{ padding: '6px 12px', fontSize: 13 }} onClick={() => openEdit(game)}>
+                                                        <Pencil size={13} /> Editar
+                                                    </button>
+                                                    <button className="button button-ghost" style={{ padding: '6px 12px', fontSize: 13, color: '#ef4444' }} onClick={() => handleDelete(game.id)}>
+                                                        <Trash2 size={13} />
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    </motion.article>
+                                );
+                            })}
+                        </AnimatePresence>
+                    </div>
+                )}
+
+                {/* Paginación */}
+                {!loading && totalPages > 1 && (
+                    <div className="pagination">
+                        <button
+                            className="pagination-btn"
+                            disabled={page === 0}
+                            onClick={() => { setPage(0); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                        >«</button>
+                        <button
+                            className="pagination-btn"
+                            disabled={page === 0}
+                            onClick={() => { setPage(p => p - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                        >‹</button>
+
+                        {Array.from({ length: totalPages }, (_, i) => i)
+                            .filter(i => i === 0 || i === totalPages - 1 || Math.abs(i - page) <= 1)
+                            .reduce((acc, i, idx, arr) => {
+                                if (idx > 0 && i - arr[idx - 1] > 1) acc.push('…');
+                                acc.push(i);
+                                return acc;
+                            }, [])
+                            .map((item, idx) =>
+                                item === '…'
+                                    ? <span key={`e${idx}`} className="pagination-ellipsis">…</span>
+                                    : <button
+                                        key={item}
+                                        className={`pagination-btn ${item === page ? 'active' : ''}`}
+                                        onClick={() => { setPage(item); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                    >{item + 1}</button>
+                            )}
+
+                        <button
+                            className="pagination-btn"
+                            disabled={page === totalPages - 1}
+                            onClick={() => { setPage(p => p + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                        >›</button>
+                        <button
+                            className="pagination-btn"
+                            disabled={page === totalPages - 1}
+                            onClick={() => { setPage(totalPages - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                        >»</button>
+                    </div>
                 )}
 
                 {!loading && filteredAndSortedGames.length === 0 && (
-                    <div className="empty-state">
-                        <Gamepad2 size={48} style={{ color: 'var(--muted)', opacity: 0.6 }} />
-                        <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--ink)' }}>No se encontraron juegos</h3>
-                        <p style={{ maxWidth: '300px' }}>
-                            Prueba ajustando tus términos de búsqueda o filtros de plataforma.
-                        </p>
-                    </div>
+                    showFavsOnly ? (
+                        <div className="empty-state">
+                            <Heart size={48} style={{ color: '#ef4444', opacity: 0.5 }} />
+                            <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--ink)' }}>Sin favoritos todavía</h3>
+                            <p style={{ maxWidth: '300px' }}>
+                                Pulsa el corazón en cualquier juego para guardarlo aquí.
+                            </p>
+                            <button
+                                className="button button-outline"
+                                onClick={() => setShowFavsOnly(false)}
+                            >
+                                Ver todos los juegos
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="empty-state">
+                            <Gamepad2 size={48} style={{ color: 'var(--muted)', opacity: 0.6 }} />
+                            <h3 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--ink)' }}>No se encontraron juegos</h3>
+                            <p style={{ maxWidth: '300px' }}>
+                                Prueba ajustando tus términos de búsqueda o filtros de plataforma.
+                            </p>
+                            {(debouncedSearch || platformFilter !== 'all') && (
+                                <button
+                                    className="button button-outline"
+                                    onClick={() => { setSearch(''); setPlatformFilter('all'); }}
+                                >
+                                    Limpiar filtros
+                                </button>
+                            )}
+                        </div>
+                    )
                 )}
 
                 {error && !loading && <div className="message message-error">{error}</div>}
