@@ -21,7 +21,118 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const NINTENDO_COVERS = {
+const GAME_COVERS = {
+    // RPG
+    'elden ring': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1245620/header.jpg',
+    "baldur's gate 3": 'https://cdn.cloudflare.steamstatic.com/steam/apps/1086940/header.jpg',
+    'the witcher 3: wild hunt': 'https://cdn.cloudflare.steamstatic.com/steam/apps/292030/header.jpg',
+    'cyberpunk 2077': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1091500/header.jpg',
+    'skyrim special edition': 'https://cdn.cloudflare.steamstatic.com/steam/apps/489830/header.jpg',
+    'mass effect legendary edition': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1328670/header.jpg',
+    'fallout 4': 'https://cdn.cloudflare.steamstatic.com/steam/apps/377160/header.jpg',
+    'persona 5 royal': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1687950/header.jpg',
+    'final fantasy vii remake': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1462040/header.jpg',
+    'final fantasy xvi': 'https://cdn.cloudflare.steamstatic.com/steam/apps/2515020/header.jpg',
+    'disco elysium': 'https://cdn.cloudflare.steamstatic.com/steam/apps/632470/header.jpg',
+    'diablo iv': 'https://cdn.cloudflare.steamstatic.com/steam/apps/2399830/header.jpg',
+    'path of exile': 'https://cdn.cloudflare.steamstatic.com/steam/apps/238960/header.jpg',
+    // Accion/Aventura
+    'god of war': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1593500/header.jpg',
+    'god of war: ragnarok': 'https://cdn.cloudflare.steamstatic.com/steam/apps/2322010/header.jpg',
+    'red dead redemption 2': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1174180/header.jpg',
+    'grand theft auto v': 'https://cdn.cloudflare.steamstatic.com/steam/apps/271590/header.jpg',
+    'spider-man remastered': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1817070/header.jpg',
+    'spider-man: miles morales': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1976870/header.jpg',
+    'ghost of tsushima': 'https://cdn.cloudflare.steamstatic.com/steam/apps/2215430/header.jpg',
+    'death stranding': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1190460/header.jpg',
+    'horizon zero dawn': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1151640/header.jpg',
+    'batman: arkham knight': 'https://cdn.cloudflare.steamstatic.com/steam/apps/208650/header.jpg',
+    'the last of us part i': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1888930/header.jpg',
+    'alan wake 2': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1903850/header.jpg',
+    'control': 'https://cdn.cloudflare.steamstatic.com/steam/apps/870780/header.jpg',
+    'deathloop': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1252330/header.jpg',
+    'ghostwire: tokyo': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1475810/header.jpg',
+    // Souls-like
+    'sekiro: shadows die twice': 'https://cdn.cloudflare.steamstatic.com/steam/apps/814380/header.jpg',
+    'dark souls iii': 'https://cdn.cloudflare.steamstatic.com/steam/apps/374320/header.jpg',
+    'dark souls: remastered': 'https://cdn.cloudflare.steamstatic.com/steam/apps/570940/header.jpg',
+    'nioh 2': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1325200/header.jpg',
+    'lies of p': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1627720/header.jpg',
+    // FPS
+    'doom eternal': 'https://cdn.cloudflare.steamstatic.com/steam/apps/782330/header.jpg',
+    'doom (2016)': 'https://cdn.cloudflare.steamstatic.com/steam/apps/379720/header.jpg',
+    'counter-strike 2': 'https://cdn.cloudflare.steamstatic.com/steam/apps/730/header.jpg',
+    'half-life: alyx': 'https://cdn.cloudflare.steamstatic.com/steam/apps/546560/header.jpg',
+    'apex legends': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1172470/header.jpg',
+    'wolfenstein ii: the new colossus': 'https://cdn.cloudflare.steamstatic.com/steam/apps/612880/header.jpg',
+    // Lucha
+    'street fighter 6': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1794680/header.jpg',
+    'tekken 8': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1778820/header.jpg',
+    'mortal kombat 11': 'https://cdn.cloudflare.steamstatic.com/steam/apps/976310/header.jpg',
+    // Plataformas/Indie
+    'hollow knight': 'https://cdn.cloudflare.steamstatic.com/steam/apps/367520/header.jpg',
+    'celeste': 'https://cdn.cloudflare.steamstatic.com/steam/apps/504230/header.jpg',
+    'cuphead': 'https://cdn.cloudflare.steamstatic.com/steam/apps/268910/header.jpg',
+    'ori and the will of the wisps': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1057090/header.jpg',
+    'ori and the blind forest': 'https://cdn.cloudflare.steamstatic.com/steam/apps/261570/header.jpg',
+    'sifu': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1468240/header.jpg',
+    'ghostrunner': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1299610/header.jpg',
+    'katana zero': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1002860/header.jpg',
+    // Roguelike
+    'hades': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1145360/header.jpg',
+    'dead cells': 'https://cdn.cloudflare.steamstatic.com/steam/apps/588650/header.jpg',
+    'risk of rain 2': 'https://cdn.cloudflare.steamstatic.com/steam/apps/632360/header.jpg',
+    'slay the spire': 'https://cdn.cloudflare.steamstatic.com/steam/apps/646570/header.jpg',
+    'vampire survivors': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1794440/header.jpg',
+    'the binding of isaac: repentance': 'https://cdn.cloudflare.steamstatic.com/steam/apps/250900/header.jpg',
+    'returnal': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1649240/header.jpg',
+    'inscryption': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1092790/header.jpg',
+    // Simulacion/Sandbox
+    'stardew valley': 'https://cdn.cloudflare.steamstatic.com/steam/apps/413150/header.jpg',
+    'terraria': 'https://cdn.cloudflare.steamstatic.com/steam/apps/105600/header.jpg',
+    "no man's sky": 'https://cdn.cloudflare.steamstatic.com/steam/apps/275850/header.jpg',
+    'subnautica': 'https://cdn.cloudflare.steamstatic.com/steam/apps/264710/header.jpg',
+    'valheim': 'https://cdn.cloudflare.steamstatic.com/steam/apps/892970/header.jpg',
+    'satisfactory': 'https://cdn.cloudflare.steamstatic.com/steam/apps/526870/header.jpg',
+    'factorio': 'https://cdn.cloudflare.steamstatic.com/steam/apps/427520/header.jpg',
+    'rust': 'https://cdn.cloudflare.steamstatic.com/steam/apps/252490/header.jpg',
+    'sons of the forest': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1326470/header.jpg',
+    'grounded': 'https://cdn.cloudflare.steamstatic.com/steam/apps/962130/header.jpg',
+    'planet zoo': 'https://cdn.cloudflare.steamstatic.com/steam/apps/703080/header.jpg',
+    'cities: skylines ii': 'https://cdn.cloudflare.steamstatic.com/steam/apps/949230/header.jpg',
+    // Estrategia
+    'civilization vi': 'https://cdn.cloudflare.steamstatic.com/steam/apps/289070/header.jpg',
+    'total war: warhammer iii': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1142710/header.jpg',
+    'age of empires iv': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1466860/header.jpg',
+    'starfield': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1716740/header.jpg',
+    // Carreras/Deportes
+    'forza horizon 5': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1551360/header.jpg',
+    'rocket league': 'https://cdn.cloudflare.steamstatic.com/steam/apps/252950/header.jpg',
+    // Aventura narrativa
+    'outer wilds': 'https://cdn.cloudflare.steamstatic.com/steam/apps/753640/header.jpg',
+    'what remains of edith finch': 'https://cdn.cloudflare.steamstatic.com/steam/apps/501300/header.jpg',
+    'firewatch': 'https://cdn.cloudflare.steamstatic.com/steam/apps/383870/header.jpg',
+    'soma': 'https://cdn.cloudflare.steamstatic.com/steam/apps/282140/header.jpg',
+    'inside': 'https://cdn.cloudflare.steamstatic.com/steam/apps/304430/header.jpg',
+    'limbo': 'https://cdn.cloudflare.steamstatic.com/steam/apps/48000/header.jpg',
+    "don't starve together": 'https://cdn.cloudflare.steamstatic.com/steam/apps/322330/header.jpg',
+    // Terror
+    'resident evil village': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1196590/header.jpg',
+    'resident evil 4 remake': 'https://cdn.cloudflare.steamstatic.com/steam/apps/2050650/header.jpg',
+    'resident evil 2 remake': 'https://cdn.cloudflare.steamstatic.com/steam/apps/883710/header.jpg',
+    'little nightmares ii': 'https://cdn.cloudflare.steamstatic.com/steam/apps/860510/header.jpg',
+    // Multijugador
+    'among us': 'https://cdn.cloudflare.steamstatic.com/steam/apps/945360/header.jpg',
+    'portal 2': 'https://cdn.cloudflare.steamstatic.com/steam/apps/620/header.jpg',
+    'dota 2': 'https://cdn.cloudflare.steamstatic.com/steam/apps/570/header.jpg',
+    // Monster Hunter
+    'monster hunter world': 'https://cdn.cloudflare.steamstatic.com/steam/apps/582010/header.jpg',
+    'monster hunter rise': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1446780/header.jpg',
+    'monster hunter world: iceborne': 'https://cdn.cloudflare.steamstatic.com/steam/apps/794489/header.jpg',
+    // MMO
+    'final fantasy xiv: endwalker': 'https://cdn.cloudflare.steamstatic.com/steam/apps/39210/header.jpg',
+    'lost ark': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1599340/header.jpg',
+    // Nintendo Switch
     'the legend of zelda: tears of the kingdom': 'https://upload.wikimedia.org/wikipedia/en/4/4e/The_Legend_of_Zelda-_Tears_of_the_Kingdom_cover.jpg',
     'the legend of zelda: breath of the wild': 'https://upload.wikimedia.org/wikipedia/en/c/c6/The_Legend_of_Zelda_Breath_of_the_Wild.jpg',
     'super mario odyssey': 'https://upload.wikimedia.org/wikipedia/en/8/8b/Super_Mario_Odyssey.jpg',
@@ -34,10 +145,12 @@ const NINTENDO_COVERS = {
     'xenoblade chronicles 3': 'https://upload.wikimedia.org/wikipedia/en/f/f0/Xenoblade_Chronicles_3.jpg',
     'kirby and the forgotten land': 'https://upload.wikimedia.org/wikipedia/en/3/34/Kirby_and_the_Forgotten_Land.jpg',
     'fire emblem engage': 'https://upload.wikimedia.org/wikipedia/en/e/e7/Fire_Emblem_Engage.jpg',
+    // Deckbuilder
+    'monster train': 'https://cdn.cloudflare.steamstatic.com/steam/apps/1102190/header.jpg',
 };
 
 const getGameCoverUrl = (nombre = '') => {
-    return NINTENDO_COVERS[nombre.toLowerCase()]
+    return GAME_COVERS[nombre.toLowerCase()]
         ?? 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?q=80&w=600&auto=format&fit=crop';
 };
 
@@ -517,6 +630,7 @@ const VideoGameList = () => {
                                     <img
                                         src={detailGame.imagenUrl || getGameCoverUrl(detailGame.nombre)}
                                         alt={detailGame.nombre}
+                                        onError={(e) => { e.currentTarget.src = getGameCoverUrl(detailGame.nombre); }}
                                     />
                                     <div className="modal-detail-banner-overlay">
                                         <h2 className="modal-detail-title">{detailGame.nombre}</h2>
@@ -650,6 +764,7 @@ const VideoGameList = () => {
                                                 src={game.imagenUrl || getGameCoverUrl(game.nombre)}
                                                 alt={game.nombre}
                                                 loading="lazy"
+                                                onError={(e) => { e.currentTarget.src = getGameCoverUrl(game.nombre); }}
                                             />
                                             <div className="card-banner-overlay">
                                                 <h3 className="card-banner-title">{game.nombre}</h3>
