@@ -22,8 +22,9 @@ services:
       - "${ADMINER_HOST_PORT}:8080"
 
   app:
-    image: pedrogv/basic-api-ktor:latest
-    # build:  (eliminar o comentar)
+    build:
+      context: ..
+      dockerfile: stack/Dockerfile
     container_name: basic-api-ktor-app
     restart: unless-stopped
     depends_on:
